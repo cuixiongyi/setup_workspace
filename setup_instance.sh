@@ -6,7 +6,7 @@ sudo apt-get install -y git vim htop parallel
 sudo apt-get install -y earlyoom
 
 # Build nvtop
-sudo apt install cmake libncurses5-dev libncursesw5-dev git
+sudo apt install -y cmake libncurses5-dev libncursesw5-dev git
 git clone https://github.com/Syllo/nvtop.git
 mkdir -p nvtop/build && cd nvtop/build
 cmake ..
@@ -52,4 +52,4 @@ echo "# xiongyi workspace setup script start----------
 " | tee -a ~/.bashrc
 
 # Install HSTR.
-sudo add-apt-repository ppa:ultradvorka/ppa && sudo apt-get update && sudo apt-get install hstr && . ~/.bashrc
+sudo add-apt-repository -y ppa:ultradvorka/ppa && sudo apt-get update && sudo apt-get install hstr && . ~/.bashrc
