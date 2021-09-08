@@ -54,7 +54,7 @@ echo "# xiongyi workspace setup script start----------
 # Install HSTR.
 sudo add-apt-repository -y ppa:ultradvorka/ppa && sudo apt-get update && sudo apt-get install hstr && . ~/.bashrc
 
-sudo wget https://raw.githubusercontent.com/aipescience/copy-files-in-parallel/master/copy-files-in-parallel -O /usr/local/bin/copy-files-in-parallel
+sudo wget https://raw.githubusercontent.com/cuixiongyi/copy-files-in-parallel/master/copy-files-in-parallel -O /usr/local/bin/copy-files-in-parallel
 sudo chmod +x /usr/local/bin/copy-files-in-parallel
 sudo wget -O /usr/local/bin/goofys  https://github.com/kahing/goofys/releases/latest/download/goofys 
 sudo chmod +x /usr/local/bin/goofys
