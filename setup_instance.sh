@@ -1,7 +1,7 @@
 # This file is setup for non-GUI workspace, like EC2. 
 # Also should be called when setting up GUI workspace.
 
-sudo apt-get install -y git vim htop parallel nmon
+sudo apt-get install -y zsh git vim htop parallel nmon
 # Used for kill program when out of memory to avoid system hanging
 sudo apt-get install -y earlyoom
 
