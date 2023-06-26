@@ -1,17 +1,17 @@
 # This file is setup for non-GUI workspace, like EC2. 
 # Also should be called when setting up GUI workspace.
 
-sudo apt-get install -y zsh git vim htop parallel nmon
+sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon
 # Used for kill program when out of memory to avoid system hanging
 sudo apt-get install -y earlyoom
 
 # Build nvtop
-sudo apt install -y cmake libncurses5-dev libncursesw5-dev git
-git clone https://github.com/Syllo/nvtop.git
-mkdir -p nvtop/build && cd nvtop/build
-cmake ..
-make -j
-sudo make install
+# sudo apt install -y cmake libncurses5-dev libncursesw5-dev git
+# git clone https://github.com/Syllo/nvtop.git
+# mkdir -p nvtop/build && cd nvtop/build
+# cmake ..
+# make -j
+# sudo make install
 
 
 # add git log prettifier
@@ -23,6 +23,28 @@ git config --global alias.branchsort "for-each-ref --sort=committerdate refs/hea
 git clone -b cxy_config https://github.com/cuixiongyi/.tmux.git /tmp/.tmux
 cp /tmp/.tmux/.tmux.conf ~/.tmux.conf
 cp /tmp/.tmux/.tmux.conf.local ~/.tmux.conf.local
+
+# install oh-my-zsh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# Install fzf
+git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
+
+
+curl micro.mamba.pm/install.sh | zsh
+
+# put setup script into .zsh
+echo "# xiongyi workspace setup script start----------
+        # Print everything to console
+        unset LESS
+        # zsh history setting
+        export HISTSIZE=1000000   # the number of items for the internal history list
+        export SAVEHIST=1000000   # maximum number of items for the history file
+        unsetopt share_history    # Don't read history after each execution
+        setopt inc_append_history # Append history right before execution, but no read history.
+        setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
+# xiongyi workspace setup script end----------
+" | tee -a ~/.zsh
+
 
 # put setup script into .bashrc
 echo "# xiongyi workspace setup script start----------
