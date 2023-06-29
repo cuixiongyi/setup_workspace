@@ -43,7 +43,7 @@ echo "# xiongyi workspace setup script start----------
         setopt inc_append_history # Append history right before execution, but no read history.
         setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
 # xiongyi workspace setup script end----------
-" | tee -a ~/.zsh
+" | tee -a ~/.zshrc
 
 
 # put setup script into .bashrc
