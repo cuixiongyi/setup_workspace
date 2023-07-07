@@ -43,6 +43,10 @@ echo "# xiongyi workspace setup script start----------
         unsetopt share_history    # Don't read history after each execution
         setopt inc_append_history # Append history right before execution, but no read history.
         setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
+
+        # Set the default python debugger to be pudb
+        export PYTHONBREAKPOINT="pudb.set_trace"
+
 # xiongyi workspace setup script end----------
 " | tee -a ~/.zshrc
 
@@ -71,6 +75,9 @@ echo "# xiongyi workspace setup script start----------
                 # if this is interactive shell, then bind 'kill last command' to Ctrl-x k
                 if [[ \$- =~ .*i.* ]]; then bind '\"\C-xk\": \"\C-a hstr -k \C-j\"'; fi
                 #export HSTR_CONFIG=blacklist
+        
+        # Set the default python debugger to be pudb
+        export PYTHONBREAKPOINT="pudb.set_trace"
 # xiongyi workspace setup script end----------
 " | tee -a ~/.bashrc
 
