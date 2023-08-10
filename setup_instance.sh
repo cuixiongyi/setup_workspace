@@ -24,6 +24,12 @@ git clone -b cxy_config https://github.com/cuixiongyi/.tmux.git /tmp/.tmux
 cp /tmp/.tmux/.tmux.conf ~/.tmux.conf
 cp /tmp/.tmux/.tmux.conf.local ~/.tmux.conf.local
 
+echo "#!/bin/bash
+if [ -S "$SSH_AUTH_SOCK" ]; then
+    ln -sf $SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
+fi" | tee ~/.ssh/rc
+
+
 zsh
 # install oh-my-zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
@@ -31,7 +37,8 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 sed -i 's/plugins=(git)/plugins=(git fzf-zsh-plugin)/g' ~/.zshrc
 
-curl micro.mamba.pm/install.sh | zsh
+wget micro.mamba.pm/install.sh
+zsh install.sh
 
 # put setup script into .zsh
 echo "# xiongyi workspace setup script start----------
