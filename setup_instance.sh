@@ -24,9 +24,11 @@ git clone -b cxy_config https://github.com/cuixiongyi/.tmux.git /tmp/.tmux
 cp /tmp/.tmux/.tmux.conf ~/.tmux.conf
 cp /tmp/.tmux/.tmux.conf.local ~/.tmux.conf.local
 
-echo "#!/bin/bash
-if [ -S "$SSH_AUTH_SOCK" ]; then
-    ln -sf $SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
+# Add support for SSH forwarding in tmux
+# https://superuser.com/questions/237822/how-can-i-get-ssh-agent-working-over-ssh-and-in-tmux-on-os-x
+echo " #\!/bin/bash
+if [ -S "\$SSH_AUTH_SOCK" ]; then
+    ln -sf \$SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
 fi" | tee ~/.ssh/rc
 
 
