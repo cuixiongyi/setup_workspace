@@ -1,7 +1,7 @@
 # This file is setup for non-GUI workspace, like EC2. 
 # Also should be called when setting up GUI workspace.
 
-sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon
+sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon ternimator
 # Used for kill program when out of memory to avoid system hanging
 sudo apt-get install -y earlyoom
 
@@ -34,7 +34,7 @@ fi" | tee ~/.ssh/rc
 
 zsh
 # install oh-my-zsh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+zsh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 # Install fzf
 git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 sed -i 's/plugins=(git)/plugins=(git fzf-zsh-plugin)/g' ~/.zshrc
@@ -52,7 +52,7 @@ echo "# xiongyi workspace setup script start----------
         unsetopt share_history    # Don't read history after each execution
         setopt inc_append_history # Append history right before execution, but no read history.
         setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
-
+        alias rsyncxy=rsync -rahP
         # Set the default python debugger to be pudb
         export PYTHONBREAKPOINT="pudb.set_trace"
 
@@ -60,6 +60,8 @@ echo "# xiongyi workspace setup script start----------
 " | tee -a ~/.zshrc
 
 
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
 # put setup script into .bashrc
 echo "# xiongyi workspace setup script start----------
         # record command history, avoid duplicates
