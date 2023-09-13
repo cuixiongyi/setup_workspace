@@ -52,7 +52,9 @@ echo "# xiongyi workspace setup script start----------
         unsetopt share_history    # Don't read history after each execution
         setopt inc_append_history # Append history right before execution, but no read history.
         setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
-        alias rsyncxy=rsync -rahP
+        function rsyncxy() {
+            rsync -rahP \$@
+        }
         # Set the default python debugger to be pudb
         export PYTHONBREAKPOINT="pudb.set_trace"
 
