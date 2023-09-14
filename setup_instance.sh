@@ -1,7 +1,7 @@
 # This file is setup for non-GUI workspace, like EC2. 
 # Also should be called when setting up GUI workspace.
 
-sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon ternimator
+sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon terminator
 # Used for kill program when out of memory to avoid system hanging
 sudo apt-get install -y earlyoom
 
