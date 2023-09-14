@@ -23,7 +23,6 @@ git config --global alias.branchsort "for-each-ref --sort=committerdate refs/hea
 git clone -b cxy_config https://github.com/cuixiongyi/.tmux.git /tmp/.tmux
 cp /tmp/.tmux/.tmux.conf ~/.tmux.conf
 cp /tmp/.tmux/.tmux.conf.local ~/.tmux.conf.local
-
 # Add support for SSH forwarding in tmux
 # https://superuser.com/questions/237822/how-can-i-get-ssh-agent-working-over-ssh-and-in-tmux-on-os-x
 echo " #\!/bin/bash
@@ -32,9 +31,10 @@ if [ -S "\$SSH_AUTH_SOCK" ]; then
 fi" | tee ~/.ssh/rc
 
 
-zsh
 # install oh-my-zsh
 zsh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+
 # Install fzf
 git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 sed -i 's/plugins=(git)/plugins=(git fzf-zsh-plugin)/g' ~/.zshrc
