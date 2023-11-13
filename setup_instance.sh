@@ -43,7 +43,7 @@ wget micro.mamba.pm/install.sh
 zsh install.sh
 
 # put setup script into .zsh
-echo "# xiongyi workspace setup script start----------
+echo "# workspace setup script start----------
         # Print everything to console
         unset LESS
         # zsh history setting
@@ -58,14 +58,17 @@ echo "# xiongyi workspace setup script start----------
         # Set the default python debugger to be pudb
         export PYTHONBREAKPOINT="pudb.set_trace"
 
-# xiongyi workspace setup script end----------
+# workspace setup script end----------
 " | tee -a ~/.zshrc
 
+
+
+# Bash setup:
 
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 # put setup script into .bashrc
-echo "# xiongyi workspace setup script start----------
+echo "# workspace setup script start----------
         # record command history, avoid duplicates
         export HISTCONTROL=ignoredups:erasedups  
         # When the shell exits, append to the history file instead of overwriting it
@@ -91,7 +94,7 @@ echo "# xiongyi workspace setup script start----------
         
         # Set the default python debugger to be pudb
         export PYTHONBREAKPOINT="pudb.set_trace"
-# xiongyi workspace setup script end----------
+# workspace setup script end----------
 " | tee -a ~/.bashrc
 
 # Install HSTR.
