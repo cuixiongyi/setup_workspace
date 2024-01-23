@@ -27,7 +27,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 # fzf: command history search
 # aws: aws command auto-complete
 # dirhistory: directory back/forward  https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/dirhistory
-sed -i 's/plugins=(git)/plugins=(git fzf-zsh-plugin aws dirhistory)/g' ~/.zshrc
+sed -i 's/plugins=(git)/plugins=(git fzf aws dirhistory)/g' ~/.zshrc
 # Install fzf
 git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 
