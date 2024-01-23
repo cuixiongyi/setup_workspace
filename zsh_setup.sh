@@ -23,9 +23,14 @@ touch ~/.zshrc
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
 
+# Install oh-my-zsh plugin
+# fzf: command history search
+# aws: aws command auto-complete
+# dirhistory: directory back/forward  https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/dirhistory
+sed -i 's/plugins=(git)/plugins=(git fzf-zsh-plugin aws dirhistory)/g' ~/.zshrc
 # Install fzf
 git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
-sed -i 's/plugins=(git)/plugins=(git fzf-zsh-plugin)/g' ~/.zshrc
+
 
 "zsh" <(curl -L micro.mamba.pm/install.sh)  < /dev/null
 
