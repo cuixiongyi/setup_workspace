@@ -29,11 +29,11 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 # dirhistory: directory back/forward  https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/dirhistory
 sed -i 's/plugins=(git)/plugins=(git fzf aws dirhistory)/g' ~/.zshrc
 # Install fzf
-git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
+#git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 
 
 "zsh" <(curl -L micro.mamba.pm/install.sh)  < /dev/null
-~/.local/bin/micromamba shell init
+~/.local/bin/micromamba shell init --shell zsh --root-prefix=~/micromamba
 
 # put setup script into .zsh
 echo "# workspace setup script start----------
@@ -54,3 +54,7 @@ echo "# workspace setup script start----------
 # workspace setup script end----------
 " | tee -a ~/.zshrc
 
+
+# Bash setup:
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install --all
