@@ -33,7 +33,7 @@ git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-
 
 
 "zsh" <(curl -L micro.mamba.pm/install.sh)  < /dev/null
-
+~/.local/bin/micromamba shell init
 
 # put setup script into .zsh
 echo "# workspace setup script start----------
@@ -53,11 +53,4 @@ echo "# workspace setup script start----------
 
 # workspace setup script end----------
 " | tee -a ~/.zshrc
-
-
-
-# Bash setup:
-
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-~/.fzf/install --all
 
