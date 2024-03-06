@@ -52,6 +52,17 @@ echo "# workspace setup script start----------
         # Set the default python debugger to be pudb
         export PYTHONBREAKPOINT="pudb.set_trace"
 
+        slist() {
+            squeue --user=${USER} -o "%.18i %.9P %.45j %.8u %.2t %.10M %.6D %.15R %.6C %.15b"
+        }
+        slistall() {
+            squeue -o "%.18i %.9P %.45j %.8u %.2t %.10M %.6D %.15R %.6C %.15b"
+        }
+        slistnode() {
+            scontrol show node
+        }
+        
+
 # workspace setup script end----------
 " | tee -a ~/.zshrc
 
