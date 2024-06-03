@@ -66,6 +66,8 @@ echo "# workspace setup script start----------
 # workspace setup script end----------
 " | tee -a ~/.zshrc
 
+git config --add oh-my-zsh.hide-dirty 1
+
 
 # Bash setup:
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
