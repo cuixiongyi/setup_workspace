@@ -2,7 +2,7 @@
 ```
 # Install cli
 sudo apt-get update
-sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon terminator
+sudo apt-get install -y zsh git vim htop parallel nmon tmux bmon terminator curl
 # Used for kill program when out of memory to avoid system hanging
 sudo apt-get install -y earlyoom
 
