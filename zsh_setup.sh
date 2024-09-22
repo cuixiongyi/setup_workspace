@@ -34,6 +34,9 @@ sed -i 's/plugins=(git)/plugins=(fzf aws)/g' ~/.zshrc
 # Install fzf
 #git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 
+# Install miniconda
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+bash ~/miniconda.sh -b -p $HOME/miniconda
 
 "zsh" <(curl -L micro.mamba.pm/install.sh)  < /dev/null
 ~/.local/bin/micromamba shell init --shell zsh --root-prefix=~/micromamba
