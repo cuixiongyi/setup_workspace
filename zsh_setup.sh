@@ -14,6 +14,7 @@ cp /tmp/.tmux/.tmux.conf.local ~/.tmux.conf.local
 # Add support for SSH forwarding in tmux
 # https://superuser.com/questions/237822/how-can-i-get-ssh-agent-working-over-ssh-and-in-tmux-on-os-x
 echo " #\!/bin/bash
+# Add support for SSH forwarding in tmux
 if [ -S "\$SSH_AUTH_SOCK" ]; then
     ln -sf \$SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
 fi" | tee ~/.ssh/rc
@@ -38,34 +39,7 @@ sed -i 's/plugins=(git)/plugins=(fzf aws)/g' ~/.zshrc
 ~/.local/bin/micromamba shell init --shell zsh --root-prefix=~/micromamba
 
 # put setup script into .zsh
-echo "# workspace setup script start----------
-        # Print everything to console
-        unset LESS
-        # zsh history setting
-        export HISTSIZE=1000000   # the number of items for the internal history list
-        export SAVEHIST=1000000   # maximum number of items for the history file
-        unsetopt share_history    # Don't read history after each execution
-        setopt inc_append_history # Append history right before execution, but no read history.
-        setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
-        function rsyncxy() {
-            rsync -rahP \$@
-        }
-        # Set the default python debugger to be pudb
-        export PYTHONBREAKPOINT="pudb.set_trace"
-
-        slist() {
-            squeue --user=${USER} -o "%.18i %.9P %.45j %.8u %.2t %.10M %.6D %.15R %.6C %.15b"
-        }
-        slistall() {
-            squeue -o "%.18i %.9P %.45j %.8u %.2t %.10M %.6D %.15R %.6C %.15b"
-        }
-        slistnode() {
-            scontrol show node
-        }
-        
-
-# workspace setup script end----------
-" | tee -a ~/.zshrc
+python3 zshrc_setup.py
 
 
 
