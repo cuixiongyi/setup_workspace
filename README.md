@@ -8,7 +8,8 @@ sudo apt-get install -y earlyoom
 
 
 Dev machine setup
-wget https://raw.githubusercontent.com/cuixiongyi/setup_workspace/master/zsh_setup.sh
+wget https://raw.githubusercontent.com/cuixiongyi/setup_workspace/master/zsh_setup.sh -O zsh_setup.sh
+wget https://raw.githubusercontent.com/cuixiongyi/setup_workspace/master/zshrc_setup.py -O zshrc_setup.py
 chmod u+x zsh_setup.sh
 ./zsh_setup.sh
 
