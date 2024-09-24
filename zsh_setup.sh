@@ -57,6 +57,8 @@ fi
 zsh ~/miniconda.sh -b -p $HOME/miniconda
 conda install -n base conda-libmamba-solver
 conda config --set solver libmamba
+# add conda pip improved interoperability
+conda config --set pip_interop_enabled True
 
 "zsh" <(curl -L micro.mamba.pm/install.sh)  < /dev/null
 ~/.local/bin/micromamba shell init --shell zsh --root-prefix=~/micromamba
