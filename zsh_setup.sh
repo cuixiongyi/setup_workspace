@@ -35,8 +35,28 @@ sed -i 's/plugins=(git)/plugins=(fzf aws)/g' ~/.zshrc
 #git clone --depth 1 https://github.com/unixorn/fzf-zsh-plugin.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-zsh-plugin
 
 # Install miniconda
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
-bash ~/miniconda.sh -b -p $HOME/miniconda
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    architecture=$(uname -m)
+    if [[ "$architecture" == "arm64" ]]; then
+        # Code to run on macOS M1
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -O ~/miniconda.sh
+    elif [[ "$architecture" == "x86_64" ]]; then
+        # Code to run on macOS Intel
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O ~/miniconda.sh
+    else
+        echo "Unknown macOS architecture" >&2
+        exit 1
+    fi
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # Code to run on Linux
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+else
+    echo "Unsupported operating system" >&2
+    exit 1
+fi
+zsh ~/miniconda.sh -b -p $HOME/miniconda
+conda install -n base conda-libmamba-solver
+conda config --set solver libmamba
 
 "zsh" <(curl -L micro.mamba.pm/install.sh)  < /dev/null
 ~/.local/bin/micromamba shell init --shell zsh --root-prefix=~/micromamba
@@ -45,7 +65,6 @@ bash ~/miniconda.sh -b -p $HOME/miniconda
 python3 zshrc_setup.py
 
 
-
 # Bash setup:
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-~/.fzf/install --all
+bash ~/.fzf/install --all
