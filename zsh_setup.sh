@@ -70,3 +70,8 @@ python3 zshrc_setup.py
 # Bash setup:
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 bash ~/.fzf/install --all
+
+sudo wget https://raw.githubusercontent.com/cuixiongyi/copy-files-in-parallel/refs/heads/master/copy-files-in-parallel -O /usr/local/bin/copy-files-in-parallel
+sudo chmod +x /usr/local/bin/copy-files-in-parallel
+
+
