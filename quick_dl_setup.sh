@@ -4,9 +4,12 @@ echo "deb https://download.sublimetext.com/ apt/dev/" | sudo tee /etc/apt/source
 
 sudo apt-get update
 
-sudo apt-get install -y git vim htop gitk sublime-text gnome-tweak-tool
+sudo apt-get install -y git vim htop 
 # Used for kill program when out of memory to avoid system hanging
-sudo apt-get install earlyoom
+sudo apt-get install -y earlyoom
+
+# UI
+sudo apt-get install -y gitk sublime-text gnome-tweak-tool
 
 # add git log prettifier
 git config --global alias.lg "log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative"
@@ -19,8 +22,9 @@ mkdir -p ~/workspace
 cd ~/workspace
 python3 -m venv dl_env 
 
-git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-~/.fzf/install --key-bindings --completion --update-rc
+# Switching to HSTR
+# git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+# ~/.fzf/install --key-bindings --completion --update-rc
 
 # Install tmux config (my branch)
 git clone -b cxy_config https://github.com/cuixiongyi/.tmux.git /tmp/.tmux
@@ -36,8 +40,8 @@ echo "# xiongyi workspace setup script start----------
         export HISTCONTROL=ignoredups:erasedups  
         # When the shell exits, append to the history file instead of overwriting it
         shopt -s histappend
-        HISTSIZE=99999
-        SAVEHIST=99999
+        HISTSIZE=999999
+        SAVEHIST=999999
 
         # After each command, append to the history file and reread it
         export PROMPT_COMMAND=\"\${PROMPT_COMMAND:+\$PROMPT_COMMAND$'\\n'}history -a; history -c; history -r\"
