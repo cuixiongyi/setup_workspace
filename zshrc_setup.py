@@ -4,8 +4,10 @@ import os
 # Define the Zsh script content
 zsh_script_content = """
 # workspace setup script start----------
+    # https://github.com/cuixiongyi/setup_workspace/edit/master/zshrc_setup.py
     # Print everything to console
     unset LESS
+    setopt globdots           # Show all hidden files
     # zsh history setting
     export HISTSIZE=1000000   # the number of items for the internal history list
     export SAVEHIST=1000000   # maximum number of items for the history file
@@ -18,7 +20,7 @@ zsh_script_content = """
     }
     # Set the default python debugger to be pudb
     export PYTHONBREAKPOINT="pudb.set_trace"
-    
+    # Slurm related commands
     slist() {
         squeue --user=${USER} -o "%.18i %.9P %.45j %.8u %.2t %.10M %.6D %.15R %.6C %.15b"
     }
