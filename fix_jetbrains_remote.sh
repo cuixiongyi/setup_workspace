@@ -11,7 +11,7 @@ PROFILE_D="/etc/profile.d/jetbrains_remote_dev.sh"
 #    We use findmnt for a reliable lookup of the FS type.
 HOME_MNT_TYPE=$(findmnt -n -o FSTYPE /home || echo "")
 
-if [[ ! "$HOME_MNT_TYPE" =~ ^(nfs|cifs|smbfs)$ ]]; then
+if [[ ! "$HOME_MNT_TYPE" =~ ^(nfs|cifs|smbfs|autofs) ]]; then
   echo "→ /home is not NFS/CIFS (found: ${HOME_MNT_TYPE:-none}); skipping JetBrains env setup."
   exit 0
 fi
