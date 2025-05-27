@@ -17,4 +17,7 @@ chmod u+x zsh_setup.sh
 # Set zsh as default shell
 chsh -s $(which zsh)
 
+# Fix JetBrains remote dev issue when ~/ is mounted on NFS
+wget https://raw.githubusercontent.com/cuixiongyi/setup_workspace/refs/heads/master/fix_jetbrains_remote.sh -O fix_jetbrains_remote.sh
+sudo bash fix_jetbrains_remote.sh
 ```
