@@ -11,13 +11,29 @@ git config --add oh-my-zsh.hide-info 1
 git clone -b cxy_config https://github.com/cuixiongyi/.tmux.git /tmp/.tmux
 cp /tmp/.tmux/.tmux.conf ~/.tmux.conf
 cp /tmp/.tmux/.tmux.conf.local ~/.tmux.conf.local
-# Add support for SSH forwarding in tmux
-# https://superuser.com/questions/237822/how-can-i-get-ssh-agent-working-over-ssh-and-in-tmux-on-os-x
-echo " #\!/bin/bash
-# Add support for SSH forwarding in tmux
-if [ -S "\$SSH_AUTH_SOCK" ]; then
-    ln -sf \$SSH_AUTH_SOCK ~/.ssh/ssh_auth_sock
-fi" | tee ~/.ssh/rc
+# Add support for SSH agent forwarding in tmux.
+#
+# HOME is shared between machines, so each machine gets its own stable
+# symlink. The symlink target remains a machine-local /tmp socket.
+mkdir -p "$HOME/.ssh"
+cat > "$HOME/.ssh/rc" <<'EOF'
+#!/bin/sh
+
+agent_dir="$HOME/.tmp/ssh-agent"
+agent_host="$(hostname -f 2>/dev/null || hostname)"
+stable_socket="$agent_dir/$agent_host.sock"
+
+umask 077
+mkdir -p "$agent_dir"
+chmod 700 "$agent_dir" 2>/dev/null || true
+
+# SSH_AUTH_SOCK is provided by sshd when agent forwarding is enabled.
+if [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ]; then
+    ln -sfn "$SSH_AUTH_SOCK" "$stable_socket"
+fi
+EOF
+
+chmod 700 "$HOME/.ssh/rc"
 
 # Avoid zsh prompts
 touch ~/.zshrc
