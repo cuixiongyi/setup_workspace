@@ -15,6 +15,31 @@ zsh_script_content = """
     setopt inc_append_history # Append history right before execution, but no read history.
     setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
     DISABLE_AUTO_UPDATE=true  # Disable ZSH update 
+    
+    # SSH agent forwarding with a stable per-machine socket.
+    # HOME is shared across machines, so include the hostname in the path.
+    _ssh_agent_dir="$HOME/.tmp/ssh-agent"
+    _ssh_agent_host="$(hostname -f 2>/dev/null || hostname)"
+    _ssh_agent_stable="${_ssh_agent_dir}/${_ssh_agent_host}.sock"
+    
+    umask 077
+    mkdir -p "$_ssh_agent_dir"
+    chmod 700 "$_ssh_agent_dir" 2>/dev/null || true
+    
+    # When this is a fresh SSH login, SSH_AUTH_SOCK points directly to the
+    # forwarded /tmp socket. Refresh the stable per-machine symlink.
+    if [[ -n "${SSH_AUTH_SOCK:-}" &&
+          "$SSH_AUTH_SOCK" != "$_ssh_agent_stable" &&
+          -S "$SSH_AUTH_SOCK" ]]; then
+        ln -sfn "$SSH_AUTH_SOCK" "$_ssh_agent_stable"
+    fi
+    
+    # All interactive shells, including shells in tmux panes, use the stable path.
+    if [[ -S "$_ssh_agent_stable" ]]; then
+        export SSH_AUTH_SOCK="$_ssh_agent_stable"
+    fi
+    unset _ssh_agent_dir _ssh_agent_host _ssh_agent_stable
+    
     function rsyncxy() {
         rsync -rahP $@
     }
