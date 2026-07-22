@@ -8,12 +8,31 @@ zsh_script_content = """
     # Print everything to console
     unset LESS
     setopt globdots           # Show all hidden files
-    # zsh history setting
-    export HISTSIZE=1000000   # the number of items for the internal history list
-    export SAVEHIST=1000000   # maximum number of items for the history file
-    unsetopt share_history    # Don't read history after each execution
-    setopt inc_append_history # Append history right before execution, but no read history.
-    setopt HIST_IGNORE_ALL_DUPS  # Keep the last unique command history.
+    
+    # ---------- Zsh history ----------
+
+# Explicitly select the history file.
+HISTFILE="$HOME/.zsh_history"
+
+# Keep the in-memory limit larger than the on-disk limit.
+HISTSIZE=1200000
+SAVEHIST=1000000
+
+# Append commands immediately, but do not automatically import commands
+# entered by other running shells.
+unsetopt SHARE_HISTORY
+setopt INC_APPEND_HISTORY
+
+# Improve locking when HOME is shared over NFS.
+setopt HIST_FCNTL_LOCK
+
+# Safely rewrite using .zsh_history.new + rename when trimming is required.
+# This is normally enabled by default, but make it explicit.
+setopt HIST_SAVE_BY_COPY
+
+# Keep only the newest occurrence of duplicate commands.
+setopt HIST_IGNORE_ALL_DUPS
+
     DISABLE_AUTO_UPDATE=true  # Disable ZSH update 
     
     # SSH agent forwarding with a stable per-machine socket.
