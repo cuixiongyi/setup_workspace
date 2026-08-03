@@ -20,4 +20,8 @@ chsh -s $(which zsh)
 # Fix JetBrains remote dev issue when ~/ is mounted on NFS
 wget https://raw.githubusercontent.com/cuixiongyi/setup_workspace/refs/heads/master/fix_jetbrains_remote.sh -O fix_jetbrains_remote.sh
 sudo bash fix_jetbrains_remote.sh
+
+# Get ROS env, so pycharm can run debug with ROS
+wget https://raw.githubusercontent.com/cuixiongyi/setup_workspace/refs/heads/master/get_ros_env.sh
+./get_ros_env.sh
 ```
