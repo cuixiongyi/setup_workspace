@@ -33,13 +33,45 @@ assert_output_contains() {
   [[ "$output" == *"$expected"* ]] || fail "output does not contain: $expected"
 }
 
-test_cluster_defaults() {
+test_profile_defaults() {
   local output
+  local expected_jetbrains_local
+
+  # shellcheck source=../install/lib.sh
+  source "$ROOT_DIR/install/lib.sh"
+  expected_jetbrains_local="$(
+    workspace_jetbrains_local_default "$(workspace_home_filesystem_type)"
+  )"
+
   output="$("$ROOT_DIR/install.sh" --cluster --print-config)"
   assert_output_contains "$output" "profile=cluster"
   assert_output_contains "$output" "gui=0"
   assert_output_contains "$output" "oom_policy=none"
+  assert_output_contains "$output" "jetbrains_local=$expected_jetbrains_local"
+  assert_output_contains "$output" "tmux_ref=58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7"
+
+  output="$(WORKSPACE_INSTALL_JETBRAINS_LOCAL=1 \
+    "$ROOT_DIR/install.sh" --cluster --print-config)"
   assert_output_contains "$output" "jetbrains_local=1"
+}
+
+test_network_filesystem_detection() {
+  # shellcheck source=../install/lib.sh
+  source "$ROOT_DIR/install/lib.sh"
+
+  local fs_type
+  for fs_type in nfs nfs4 cifs smb2 ceph glusterfs gpfs lustre fuse.sshfs; do
+    workspace_filesystem_is_networked "$fs_type" ||
+      fail "$fs_type was not detected as a network filesystem"
+    [[ "$(workspace_jetbrains_local_default "$fs_type")" == "1" ]] ||
+      fail "$fs_type did not enable JetBrains localization"
+  done
+
+  if workspace_filesystem_is_networked ext2/ext3; then
+    fail "local filesystem was detected as networked"
+  fi
+  [[ "$(workspace_jetbrains_local_default ext2/ext3)" == "0" ]] ||
+    fail "local filesystem enabled JetBrains localization"
 }
 
 test_managed_files_and_backups() {
@@ -247,7 +279,8 @@ test_tmux_config() {
   tmux -L "$socket" kill-server
 }
 
-test_cluster_defaults
+test_profile_defaults
+test_network_filesystem_detection
 test_managed_files_and_backups
 test_shared_lock
 test_ssh_and_jetbrains_migration

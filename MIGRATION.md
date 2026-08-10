@@ -83,13 +83,8 @@ are removed from `.zshrc`. New source blocks point to files below
 The installer does not run `conda init`. It records the selected prefix and
 sources that installation's `conda.sh` from the managed common shell file.
 
-## tmux fork
+## tmux
 
-User-owned behavior is in `configs/tmux.conf.local`. The managed tmux checkout
-is pinned by default. If the checkout contains local modifications, installation
-stops rather than using `git reset --hard`.
-
-The historical cleanup patch remains in
-`patches/tmux-main-cleanup.patch` for synchronizing the fork with upstream.
-It is not applied automatically.
-
+User-owned behavior is in `configs/tmux.conf.local`. The managed upstream tmux
+checkout is pinned by default. If the checkout contains local modifications,
+installation stops rather than using `git reset --hard`.

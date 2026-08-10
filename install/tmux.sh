@@ -7,8 +7,11 @@ source "$SCRIPT_DIR/lib.sh"
 
 workspace_require_cmd git
 
-repo="${WORKSPACE_TMUX_REPO:-https://github.com/cuixiongyi/.tmux.git}"
-ref="${WORKSPACE_TMUX_REF:-029e75d7fdabdb1c4cd8c90aea72fe34acb563b1}"
+# The checkout contains only pinned upstream code. All user behavior belongs in
+# configs/tmux.conf.local so updating upstream never requires resetting or
+# carrying local changes in this managed Git repository.
+repo="${WORKSPACE_TMUX_REPO:-https://github.com/gpakosz/.tmux.git}"
+ref="${WORKSPACE_TMUX_REF:-58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7}"
 tmux_dir="${WORKSPACE_TMUX_DIR:-$HOME/.local/share/setup_workspace/tmux}"
 
 mkdir -p -- "$(dirname -- "$tmux_dir")"
@@ -17,7 +20,7 @@ if [[ ! -d "$tmux_dir/.git" ]]; then
   if [[ -e "$tmux_dir" ]]; then
     workspace_die "$tmux_dir exists but is not a git checkout"
   fi
-  workspace_log "cloning tmux config fork"
+  workspace_log "cloning upstream tmux config"
   git clone --origin origin "$repo" "$tmux_dir"
 else
   current_origin="$(git -C "$tmux_dir" remote get-url origin 2>/dev/null || true)"

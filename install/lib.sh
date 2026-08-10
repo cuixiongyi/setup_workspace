@@ -303,18 +303,32 @@ workspace_is_systemd_running() {
 }
 
 workspace_home_filesystem_type() {
+  # statfs follows HOME to its mounted filesystem, including when HOME itself
+  # is reached through an automount path.
   stat -f -c '%T' "$HOME" 2>/dev/null || printf 'unknown\n'
 }
 
-workspace_home_is_networked() {
-  case "$(workspace_home_filesystem_type)" in
-    nfs|nfs4|cifs|smb2|smbfs|autofs)
+workspace_filesystem_is_networked() {
+  # Keep this conservative list in sync with workspace-jetbrains-local. It
+  # covers common NAS protocols plus shared/distributed filesystems frequently
+  # used for cluster home directories. Unknown filesystems retain normal HOME
+  # behavior rather than unexpectedly moving user state.
+  case "$1" in
+    nfs|nfs4|cifs|smb2|smbfs|autofs|afs|ceph|ceph-fuse|glusterfs|gpfs|lustre|panfs|9p|davfs|davfs2|fuse.sshfs|sshfs)
       return 0
       ;;
     *)
       return 1
       ;;
   esac
+}
+
+workspace_jetbrains_local_default() {
+  if workspace_filesystem_is_networked "$1"; then
+    printf '1\n'
+  else
+    printf '0\n'
+  fi
 }
 
 workspace_acquire_shared_lock() {

@@ -33,9 +33,12 @@ validate_root() {
       ;;
   esac
 
+  # This list mirrors workspace_filesystem_is_networked in install/lib.sh.
+  # Recheck here because the saved root may differ from HOME and this helper is
+  # intentionally standalone after installation.
   fs_type="$(stat -f -c '%T' "$(dirname -- "$root")" 2>/dev/null || true)"
   case "$fs_type" in
-    nfs|nfs4|cifs|smb2|smbfs|autofs)
+    nfs|nfs4|cifs|smb2|smbfs|autofs|afs|ceph|ceph-fuse|glusterfs|gpfs|lustre|panfs|9p|davfs|davfs2|fuse.sshfs|sshfs)
       fail "local root parent is on a network filesystem ($fs_type): $root"
       ;;
   esac
@@ -68,7 +71,7 @@ ensure_dirs() {
   prepare_dir "$root"
   root_fs_type="$(stat -f -c '%T' "$root" 2>/dev/null || true)"
   case "$root_fs_type" in
-    nfs|nfs4|cifs|smb2|smbfs|autofs)
+    nfs|nfs4|cifs|smb2|smbfs|autofs|afs|ceph|ceph-fuse|glusterfs|gpfs|lustre|panfs|9p|davfs|davfs2|fuse.sshfs|sshfs)
       fail "local root is on a network filesystem ($root_fs_type): $root"
       ;;
   esac

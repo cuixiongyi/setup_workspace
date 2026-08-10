@@ -61,6 +61,9 @@ fi
 helper="$HOME/.local/bin/workspace-jetbrains-local"
 workspace_install_file "$WORKSPACE_ROOT/bin/workspace-jetbrains-local" "$helper" 0755
 
+# Keep the automatic path host-local and stable without requiring cluster
+# mount-point conventions. Users can still select a different persistent local
+# root explicitly with WORKSPACE_LOCAL_ROOT.
 local_root="${WORKSPACE_LOCAL_ROOT:-/var/tmp/setup-workspace-$(id -u)}"
 root_file="$(mktemp)"
 printf '%s\n' "$local_root" > "$root_file"

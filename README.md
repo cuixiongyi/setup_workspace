@@ -40,28 +40,10 @@ The cluster profile defaults to:
 
 - no GUI packages;
 - no change to the host's OOM policy;
-- persistent host-local JetBrains state; and
 - the same shared shell/tmux configuration on every node.
 
-For JetBrains, choose an absolute path that is backed by persistent local SSD
-and is available under the same pathname on every node:
-
-```bash
-WORKSPACE_LOCAL_ROOT="/local/$USER/setup-workspace" \
-  ./install.sh --cluster --user-only
-```
-
-The selected path is recorded in
-`~/.config/setup_workspace/local-root`. On every host, either log in normally
-or run this before its first Gateway connection:
-
-```bash
-workspace-jetbrains-local ensure
-```
-
-The default local root is `/var/tmp/setup-workspace-$UID`. A provisioned
-`/local` or `/scratch` SSD is preferable on clusters. Paths below `/tmp`
-and network filesystems are rejected for JetBrains persistent state.
+If `HOME` is on a network filesystem, JetBrains state automatically uses
+`/var/tmp/setup-workspace-$UID` on the local host.
 
 ## Installation phases
 
@@ -140,25 +122,9 @@ user SSH hooks untouched.
 
 ## JetBrains Remote Development
 
-JetBrains caches, backend distributions, settings, and plugins must not be
-actively shared by IDE processes on different machines. When local mode is
-enabled, these shared-home paths become symlinks:
-
-```text
-~/.cache/JetBrains       -> $WORKSPACE_LOCAL_ROOT/jetbrains/cache
-~/.config/JetBrains      -> $WORKSPACE_LOCAL_ROOT/jetbrains/config
-~/.local/share/JetBrains -> $WORKSPACE_LOCAL_ROOT/jetbrains/share
-```
-
-Only JetBrains paths are redirected. `XDG_CACHE_HOME`, `XDG_CONFIG_HOME`,
-`XDG_DATA_HOME`, and `TMPDIR` are not globally changed.
-
-Existing JetBrains configuration and plugins are seeded into the local
-directory on the installation host. Existing paths are moved to unique backups
-before the symlinks are created. Backend caches are deliberately not copied.
-
-Because settings are host-local, use JetBrains Settings Sync for preferences
-that should follow you between machines.
+Network-mounted home directories are detected automatically. Use
+`WORKSPACE_LOCAL_ROOT` to override the default local directory, or
+`--jetbrains-local`/`--no-jetbrains-local` to override detection.
 
 Diagnostics:
 
@@ -204,7 +170,7 @@ The setup lock protects bootstrap itself, not later manual `conda` commands.
 --no-conda             skip Miniconda
 --oom-policy POLICY    auto, earlyoom, systemd-oomd, or none
 --set-default-shell    change the login shell to zsh
---tmux-ref REF         tmux fork branch, tag, or commit
+--tmux-ref REF         upstream tmux-config branch, tag, or commit
 --print-config         print resolved settings without installing
 ```
 
@@ -235,7 +201,7 @@ Defaults are pinned and checksum-verified where downloaded archives are used:
 ```text
 AWS CLI       2.36.2
 Miniconda     py312_26.5.3-2
-tmux config   029e75d7fdabdb1c4cd8c90aea72fe34acb563b1
+tmux config   58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7
 Oh My Zsh     97b27bb2ec0701330b18c2d3e340b22e742b3fa8
 copy-files    aaa4bbabc29e1afadef98456a56b8a72a80519a2
 ```
@@ -274,7 +240,7 @@ Small marked blocks source it from `.zshrc`, `.bashrc`, `.profile`, and
 targets. Changed files receive unique backups, and replacement is atomic within
 the same filesystem.
 
-The tmux fork checkout lives under:
+The upstream tmux-config checkout lives under:
 
 ```text
 ~/.local/share/setup_workspace/tmux
@@ -308,4 +274,4 @@ Linux functional tests:
 
 The functional suite uses temporary homes and local roots. It covers clean and
 repeated installs, legacy SSH migration, unique backups, shared locks,
-JetBrains symlinks, and cluster profile defaults.
+JetBrains symlinks, network-home detection, and cluster profile defaults.

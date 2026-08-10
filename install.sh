@@ -14,8 +14,11 @@ export WORKSPACE_INSTALL_AWS="${WORKSPACE_INSTALL_AWS:-1}"
 export WORKSPACE_INSTALL_CONDA="${WORKSPACE_INSTALL_CONDA:-1}"
 export WORKSPACE_INSTALL_JETBRAINS_LOCAL="${WORKSPACE_INSTALL_JETBRAINS_LOCAL:-auto}"
 export WORKSPACE_SET_DEFAULT_SHELL="${WORKSPACE_SET_DEFAULT_SHELL:-0}"
-export WORKSPACE_TMUX_REPO="${WORKSPACE_TMUX_REPO:-https://github.com/cuixiongyi/.tmux.git}"
-export WORKSPACE_TMUX_REF="${WORKSPACE_TMUX_REF:-029e75d7fdabdb1c4cd8c90aea72fe34acb563b1}"
+# Track the original Oh my tmux! repository. setup_workspace customizations are
+# installed separately as ~/.tmux.conf.local, leaving this checkout pristine so
+# it can move between pinned upstream revisions without maintaining a fork.
+export WORKSPACE_TMUX_REPO="${WORKSPACE_TMUX_REPO:-https://github.com/gpakosz/.tmux.git}"
+export WORKSPACE_TMUX_REF="${WORKSPACE_TMUX_REF:-58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7}"
 export WORKSPACE_COPY_FILES_REV="${WORKSPACE_COPY_FILES_REV:-aaa4bbabc29e1afadef98456a56b8a72a80519a2}"
 export WORKSPACE_AWS_VERSION="${WORKSPACE_AWS_VERSION:-2.36.2}"
 export WORKSPACE_OMZ_REPO="${WORKSPACE_OMZ_REPO:-https://github.com/ohmyzsh/ohmyzsh.git}"
@@ -49,7 +52,7 @@ Feature options:
   --no-conda             Skip Miniconda installation.
   --oom-policy POLICY    auto, earlyoom, systemd-oomd, or none.
   --set-default-shell    Run chsh to make zsh the login shell.
-  --tmux-ref REF         Branch, tag, or commit from the tmux fork.
+  --tmux-ref REF         Upstream tmux-config branch, tag, or commit.
   --print-config         Print resolved profile settings without installing.
   -h, --help             Show this help.
 
@@ -161,14 +164,18 @@ esac
 if [[ "$WORKSPACE_PROFILE" == "cluster" ]]; then
   [[ "$WORKSPACE_INSTALL_GUI" == "auto" ]] && export WORKSPACE_INSTALL_GUI=0
   [[ "$oom_policy_explicit" -eq 1 ]] || export WORKSPACE_OOM_POLICY=none
-  [[ "$WORKSPACE_INSTALL_JETBRAINS_LOCAL" == "auto" ]] &&
-    export WORKSPACE_INSTALL_JETBRAINS_LOCAL=1
-elif [[ "$WORKSPACE_INSTALL_JETBRAINS_LOCAL" == "auto" ]]; then
-  if workspace_home_is_networked; then
-    export WORKSPACE_INSTALL_JETBRAINS_LOCAL=1
-  else
-    export WORKSPACE_INSTALL_JETBRAINS_LOCAL=0
-  fi
+fi
+
+# A shared HOME is unsafe for concurrently running JetBrains backends. Apply
+# the same filesystem-based default in every profile so callers do not need to
+# know whether the machine was labelled as a workstation or cluster. Explicit
+# --jetbrains-local/--no-jetbrains-local choices have already changed auto to
+# 1/0 and therefore remain authoritative.
+if [[ "$WORKSPACE_INSTALL_JETBRAINS_LOCAL" == "auto" ]]; then
+  WORKSPACE_INSTALL_JETBRAINS_LOCAL="$(
+    workspace_jetbrains_local_default "$(workspace_home_filesystem_type)"
+  )"
+  export WORKSPACE_INSTALL_JETBRAINS_LOCAL
 fi
 
 if [[ "$print_config" -eq 1 ]]; then
@@ -264,7 +271,5 @@ SSH agent stable socket on every host:
   /tmp/setup-workspace-ssh-agent-$(id -u)/agent.sock
 
 For cluster provisioning, run the system phase on every machine image/host and
-the user phase once for the shared home. Run workspace-jetbrains-local ensure
-on a host before its first JetBrains Gateway connection if local storage was
-cleaned since the previous login.
+the user phase once for the shared home.
 EOF

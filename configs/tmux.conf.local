@@ -4,6 +4,8 @@
 #         without any warranty.
 #         Copyright 2012— Gregory Pakosz (@gpakosz).
 
+# Keep every setup_workspace customization in this local override. The managed
+# ~/.tmux.conf checkout remains an unmodified, pinned copy of upstream.
 
 # -- navigation ----------------------------------------------------------------
 
@@ -46,7 +48,7 @@ set -g mouse on
 set -g status-keys vi
 setw -g mode-keys vi
 
-# stay in copy mode after mouse selection (moved from the fork's .tmux.conf)
+# stay in copy mode after mouse selection (moved out of the old fork)
 bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-selection-no-clear
 bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-selection-no-clear
 bind-key -T copy-mode-vi DoubleClick1Pane send-keys -X select-word \; send-keys -X copy-selection-no-clear

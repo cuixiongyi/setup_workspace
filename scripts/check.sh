@@ -50,6 +50,14 @@ else
   fail=1
 fi
 
+if grep -Fq 'https://github.com/gpakosz/.tmux.git' "$ROOT_DIR/install.sh" && \
+   grep -Fq 'https://github.com/gpakosz/.tmux.git' "$ROOT_DIR/install/tmux.sh"; then
+  echo "tmux uses the original upstream repository"
+else
+  echo "tmux upstream repository check failed" >&2
+  fail=1
+fi
+
 if [[ "$fail" -ne 0 ]]; then
   exit 1
 fi
