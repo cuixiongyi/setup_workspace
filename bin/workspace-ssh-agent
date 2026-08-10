@@ -1,0 +1,91 @@
+#!/bin/sh
+set -eu
+
+uid="$(id -u)"
+stable_dir="/tmp/setup-workspace-ssh-agent-$uid"
+stable_socket="$stable_dir/agent.sock"
+
+fail() {
+  printf '[workspace-ssh-agent] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+prepare_dir() {
+  if [ -L "$stable_dir" ]; then
+    fail "$stable_dir must not be a symlink"
+  fi
+
+  if [ -e "$stable_dir" ] && [ ! -d "$stable_dir" ]; then
+    fail "$stable_dir exists but is not a directory"
+  fi
+
+  if [ ! -d "$stable_dir" ]; then
+    old_umask="$(umask)"
+    umask 077
+    mkdir -p -- "$stable_dir"
+    umask "$old_umask"
+  fi
+
+  owner_uid="$(stat -c '%u' "$stable_dir" 2>/dev/null || true)"
+  [ "$owner_uid" = "$uid" ] || fail "$stable_dir is not owned by uid $uid"
+  chmod 700 -- "$stable_dir"
+}
+
+refresh_agent() {
+  source_socket="${1:-${SSH_AUTH_SOCK:-}}"
+  prepare_dir
+
+  if [ -n "$source_socket" ] && [ "$source_socket" != "$stable_socket" ] && [ -S "$source_socket" ]; then
+    tmp_link="$stable_dir/.agent.sock.$$"
+    rm -f -- "$tmp_link"
+    ln -s -- "$source_socket" "$tmp_link"
+    mv -Tf -- "$tmp_link" "$stable_socket"
+  fi
+
+  printf '%s\n' "$stable_socket"
+}
+
+show_status() {
+  prepare_dir
+  printf 'stable socket: %s\n' "$stable_socket"
+
+  if [ -L "$stable_socket" ]; then
+    printf 'target: %s\n' "$(readlink -- "$stable_socket")"
+  elif [ -S "$stable_socket" ]; then
+    printf 'target: direct socket\n'
+  else
+    printf 'target: unavailable\n'
+  fi
+
+  if [ -S "$stable_socket" ] && command -v ssh-add >/dev/null 2>&1; then
+    if SSH_AUTH_SOCK="$stable_socket" ssh-add -l; then
+      return 0
+    fi
+    rc=$?
+    if [ "$rc" -eq 1 ]; then
+      printf 'agent is reachable but has no identities\n'
+      return 0
+    fi
+    return "$rc"
+  fi
+
+  return 1
+}
+
+case "${1:-refresh}" in
+  refresh)
+    shift || true
+    refresh_agent "${1:-${SSH_AUTH_SOCK:-}}"
+    ;;
+  path)
+    prepare_dir
+    printf '%s\n' "$stable_socket"
+    ;;
+  status)
+    show_status
+    ;;
+  *)
+    printf 'Usage: %s [refresh [SOURCE_SOCKET]|path|status]\n' "$0" >&2
+    exit 2
+    ;;
+esac
