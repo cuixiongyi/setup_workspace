@@ -11,7 +11,11 @@ fi
 
 test_root="$(mktemp -d)"
 local_root="/var/tmp/setup-workspace-test-$$"
+ssh_agent_test_pids=()
 cleanup() {
+  if ((${#ssh_agent_test_pids[@]})); then
+    kill "${ssh_agent_test_pids[@]}" 2>/dev/null || true
+  fi
   rm -rf -- "$test_root" "$local_root"
 }
 trap cleanup EXIT
@@ -246,6 +250,86 @@ PAM
   fi
 }
 
+test_ssh_agent_socket_refresh() {
+  local agent_dir="$test_root/ssh-agent-helper"
+  local source_dir="$test_root/ssh-agent-sources"
+  local legacy_socket="$source_dir/legacy.sock"
+  local first_socket="$source_dir/first.sock"
+  local second_socket="$source_dir/second.sock"
+  local started_agent_dir="$test_root/started-ssh-agent"
+  local test_key="$source_dir/test-key"
+  local first_pid
+  local second_pid
+  local started_pid
+  local stable_socket="$agent_dir/agent.sock"
+
+  command -v ssh-agent >/dev/null 2>&1 || return 0
+  mkdir -p -- "$source_dir"
+
+  first_pid="$(ssh-agent -a "$first_socket" -s | sed -n 's/^SSH_AGENT_PID=\([0-9][0-9]*\);.*/\1/p')"
+  second_pid="$(ssh-agent -a "$second_socket" -s | sed -n 's/^SSH_AGENT_PID=\([0-9][0-9]*\);.*/\1/p')"
+  [[ -n "$first_pid" && -n "$second_pid" ]] || fail "could not start test SSH agents"
+  ssh_agent_test_pids=("$first_pid" "$second_pid")
+
+  WORKSPACE_SSH_AGENT_DIR="$agent_dir" \
+    "$ROOT_DIR/bin/workspace-ssh-agent" refresh "$first_socket" >/dev/null
+  [[ "$(readlink -f -- "$stable_socket")" == "$first_socket" ]] ||
+    fail "stable SSH socket did not resolve to the first agent"
+
+  # The legacy setup used a second stable link in HOME. Refreshing from that
+  # alias must remain a no-op instead of replacing stable_socket with a link
+  # back to the alias and creating a cycle.
+  ln -s -- "$stable_socket" "$legacy_socket"
+  WORKSPACE_SSH_AGENT_DIR="$agent_dir" \
+    "$ROOT_DIR/bin/workspace-ssh-agent" refresh "$legacy_socket" >/dev/null
+  [[ "$(readlink -f -- "$stable_socket")" == "$first_socket" ]] ||
+    fail "legacy SSH socket alias created a cycle"
+
+  # Recover the precise broken A -> B -> A state seen during migration.
+  ln -sfn -- "$legacy_socket" "$stable_socket"
+  WORKSPACE_SSH_AGENT_DIR="$agent_dir" \
+    "$ROOT_DIR/bin/workspace-ssh-agent" refresh "$second_socket" >/dev/null
+  [[ "$(readlink -f -- "$stable_socket")" == "$second_socket" ]] ||
+    fail "stable SSH socket did not recover from a symlink cycle"
+
+  if command -v ssh-keygen >/dev/null 2>&1; then
+    ssh-keygen -q -t ed25519 -N '' -f "$test_key"
+    SSH_AUTH_SOCK='' WORKSPACE_SSH_AGENT_DIR="$started_agent_dir" \
+      "$ROOT_DIR/bin/workspace-ssh-agent" start "$test_key" >/dev/null
+    started_pid="$(cat -- "$started_agent_dir/managed-agent.pid")"
+    [[ -n "$started_pid" ]] || fail "workspace SSH-agent command did not record its agent"
+    ssh_agent_test_pids+=("$started_pid")
+    SSH_AUTH_SOCK="$started_agent_dir/agent.sock" ssh-add -l >/dev/null ||
+      fail "workspace SSH-agent command did not add the requested key"
+  fi
+
+  if command -v zsh >/dev/null 2>&1 && [[ -f "$test_key" ]]; then
+    mkdir -p -- "$test_root/zsh-agent-home/.local/bin" \
+      "$test_root/zsh-agent-home/.config/setup_workspace"
+    install -m 0755 -- "$ROOT_DIR/bin/workspace-ssh-agent" \
+      "$test_root/zsh-agent-home/.local/bin/workspace-ssh-agent"
+    install -m 0644 -- "$ROOT_DIR/configs/shell-common.sh" \
+      "$test_root/zsh-agent-home/.config/setup_workspace/shell-common.sh"
+    install -m 0644 -- "$ROOT_DIR/configs/workspace.zsh" \
+      "$test_root/zsh-agent-home/.config/setup_workspace/workspace.zsh"
+
+    HOME="$test_root/zsh-agent-home" \
+    WORKSPACE_SSH_AGENT_DIR="$agent_dir" \
+    TEST_SOURCE_SOCKET="$second_socket" \
+    TEST_PRIVATE_KEY="$test_key" \
+      zsh -f -c '
+        source "$HOME/.config/setup_workspace/workspace.zsh"
+        SSH_AUTH_SOCK="$TEST_SOURCE_SOCKET"
+        workspace-agent "$TEST_PRIVATE_KEY"
+        [[ "$SSH_AUTH_SOCK" == "$WORKSPACE_SSH_AGENT_DIR/agent.sock" ]]
+        (( ${precmd_functions[(Ie)_workspace_sync_ssh_agent]} ))
+      ' >/dev/null || fail "zsh agent utility or prompt hook did not work"
+  fi
+
+  kill "${ssh_agent_test_pids[@]}" 2>/dev/null || true
+  ssh_agent_test_pids=()
+}
+
 test_shell_idempotency() {
   local home="$test_root/shell-home"
   local first
@@ -284,6 +368,7 @@ test_network_filesystem_detection
 test_managed_files_and_backups
 test_shared_lock
 test_ssh_and_jetbrains_migration
+test_ssh_agent_socket_refresh
 test_shell_idempotency
 test_tmux_config
 

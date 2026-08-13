@@ -14,13 +14,5 @@ case "$env_line" in
   SSH_AUTH_SOCK=*) source_socket="${env_line#SSH_AUTH_SOCK=}" ;;
 esac
 
-stable_socket="$("$agent_helper" refresh "$source_socket")" || exit 0
+stable_socket="$("$agent_helper" publish "$source_socket")" || exit 0
 [ -S "$stable_socket" ] || exit 0
-
-# Keep every session pointed at the stable local path. The symlink target is
-# refreshed whenever a new forwarded agent arrives on this host.
-tmux set-environment -g SSH_AUTH_SOCK "$stable_socket"
-tmux list-sessions -F '#{session_id}' 2>/dev/null | while IFS= read -r target_session; do
-  [ -n "$target_session" ] || continue
-  tmux set-environment -t "$target_session" SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
-done
