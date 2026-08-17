@@ -7,11 +7,11 @@ source "$SCRIPT_DIR/lib.sh"
 
 workspace_require_cmd git
 
-# The checkout contains only pinned upstream code. All user behavior belongs in
+# The checkout contains only upstream code. All user behavior belongs in
 # configs/tmux.conf.local so updating upstream never requires resetting or
 # carrying local changes in this managed Git repository.
 repo="${WORKSPACE_TMUX_REPO:-https://github.com/gpakosz/.tmux.git}"
-ref="${WORKSPACE_TMUX_REF:-58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7}"
+ref="${WORKSPACE_TMUX_REF:-latest}"
 tmux_dir="${WORKSPACE_TMUX_DIR:-$HOME/.local/share/setup_workspace/tmux}"
 
 mkdir -p -- "$(dirname -- "$tmux_dir")"
@@ -36,13 +36,8 @@ fi
 
 workspace_log "updating tmux config to $ref"
 git -C "$tmux_dir" fetch --prune origin
-
-if git -C "$tmux_dir" show-ref --verify --quiet "refs/remotes/origin/$ref"; then
-  git -C "$tmux_dir" checkout -B setup-workspace "origin/$ref"
-else
-  git -C "$tmux_dir" fetch --depth 1 origin "$ref"
-  git -C "$tmux_dir" checkout --detach FETCH_HEAD
-fi
+commit="$(workspace_git_remote_commit "$tmux_dir" "$ref")"
+git -C "$tmux_dir" checkout --detach "$commit"
 
 workspace_install_file "$WORKSPACE_ROOT/configs/tmux.conf.local" "$HOME/.config/setup_workspace/tmux.conf.local" 0644
 workspace_safe_symlink "$tmux_dir/.tmux.conf" "$HOME/.tmux.conf"

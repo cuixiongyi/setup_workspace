@@ -170,7 +170,7 @@ The setup lock protects bootstrap itself, not later manual `conda` commands.
 --no-conda             skip Miniconda
 --oom-policy POLICY    auto, earlyoom, systemd-oomd, or none
 --set-default-shell    change the login shell to zsh
---tmux-ref REF         upstream tmux-config branch, tag, or commit
+--tmux-ref REF         upstream tmux-config branch, tag, commit, or latest
 --print-config         print resolved settings without installing
 ```
 
@@ -196,19 +196,21 @@ WORKSPACE_OOM_POLICY
 WORKSPACE_SET_DEFAULT_SHELL
 ```
 
-Defaults are pinned and checksum-verified where downloaded archives are used:
+The maintained installer follows the latest upstream version by default:
 
 ```text
-AWS CLI       2.36.2
-Miniconda     py312_26.5.3-2
-tmux config   58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7
-Oh My Zsh     97b27bb2ec0701330b18c2d3e340b22e742b3fa8
-copy-files    aaa4bbabc29e1afadef98456a56b8a72a80519a2
+AWS CLI       latest v2 release
+Miniconda     latest Linux installer
+tmux config   latest commit on the upstream default branch
+Oh My Zsh     latest commit on the upstream default branch
+copy-files    latest commit on the upstream default branch
 ```
 
-Changing AWS CLI or Miniconda versions requires adding trusted SHA-256 values
-for every supported architecture. Git revisions may be a branch/tag for
-experimentation, but committed deployments should use immutable hashes.
+Re-running the installer updates existing installations. AWS archives are
+verified with the AWS CLI signing key; Miniconda is verified against the
+SHA-256 published in Anaconda's current archive index. Set an explicit AWS
+version or Git ref through the environment overrides when a reproducible,
+temporarily pinned setup is needed.
 
 ## OOM policy
 

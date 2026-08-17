@@ -16,13 +16,13 @@ export WORKSPACE_INSTALL_JETBRAINS_LOCAL="${WORKSPACE_INSTALL_JETBRAINS_LOCAL:-a
 export WORKSPACE_SET_DEFAULT_SHELL="${WORKSPACE_SET_DEFAULT_SHELL:-0}"
 # Track the original Oh my tmux! repository. setup_workspace customizations are
 # installed separately as ~/.tmux.conf.local, leaving this checkout pristine so
-# it can move between pinned upstream revisions without maintaining a fork.
+# it can follow upstream without maintaining a fork.
 export WORKSPACE_TMUX_REPO="${WORKSPACE_TMUX_REPO:-https://github.com/gpakosz/.tmux.git}"
-export WORKSPACE_TMUX_REF="${WORKSPACE_TMUX_REF:-58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7}"
-export WORKSPACE_COPY_FILES_REV="${WORKSPACE_COPY_FILES_REV:-aaa4bbabc29e1afadef98456a56b8a72a80519a2}"
-export WORKSPACE_AWS_VERSION="${WORKSPACE_AWS_VERSION:-2.36.2}"
+export WORKSPACE_TMUX_REF="${WORKSPACE_TMUX_REF:-latest}"
+export WORKSPACE_COPY_FILES_REV="${WORKSPACE_COPY_FILES_REV:-latest}"
+export WORKSPACE_AWS_VERSION="${WORKSPACE_AWS_VERSION:-latest}"
 export WORKSPACE_OMZ_REPO="${WORKSPACE_OMZ_REPO:-https://github.com/ohmyzsh/ohmyzsh.git}"
-export WORKSPACE_OMZ_REF="${WORKSPACE_OMZ_REF:-97b27bb2ec0701330b18c2d3e340b22e742b3fa8}"
+export WORKSPACE_OMZ_REF="${WORKSPACE_OMZ_REF:-latest}"
 
 oom_policy_explicit=0
 print_config=0
@@ -52,7 +52,7 @@ Feature options:
   --no-conda             Skip Miniconda installation.
   --oom-policy POLICY    auto, earlyoom, systemd-oomd, or none.
   --set-default-shell    Run chsh to make zsh the login shell.
-  --tmux-ref REF         Upstream tmux-config branch, tag, or commit.
+  --tmux-ref REF         Upstream tmux-config branch, tag, commit, or latest.
   --print-config         Print resolved profile settings without installing.
   -h, --help             Show this help.
 

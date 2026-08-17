@@ -295,7 +295,28 @@ workspace_download() {
   local dst="$2"
 
   curl --fail --location --show-error --silent --retry 3 --retry-delay 2 \
+    --proto '=https' --tlsv1.2 \
     --output "$dst" "$url"
+}
+
+workspace_git_remote_commit() {
+  local repo_dir="$1"
+  local ref="$2"
+  local commit
+
+  if [[ "$ref" == "latest" ]]; then
+    git -C "$repo_dir" remote set-head origin --auto >/dev/null
+    commit="$(git -C "$repo_dir" rev-parse --verify 'refs/remotes/origin/HEAD^{commit}')"
+  elif commit="$(git -C "$repo_dir" rev-parse --verify --quiet "refs/remotes/origin/$ref^{commit}")"; then
+    :
+  elif commit="$(git -C "$repo_dir" rev-parse --verify --quiet "refs/tags/$ref^{commit}")"; then
+    :
+  else
+    git -C "$repo_dir" fetch --depth 1 origin "$ref"
+    commit="$(git -C "$repo_dir" rev-parse --verify 'FETCH_HEAD^{commit}')"
+  fi
+
+  printf '%s\n' "$commit"
 }
 
 workspace_is_systemd_running() {

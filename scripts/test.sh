@@ -48,7 +48,10 @@ test_profile_defaults() {
   assert_output_contains "$output" "gui=0"
   assert_output_contains "$output" "oom_policy=none"
   assert_output_contains "$output" "jetbrains_local=$expected_jetbrains_local"
-  assert_output_contains "$output" "tmux_ref=58a3dcc0d718ec0fa1c0d5a2fddd640a1ad7a5b7"
+  assert_output_contains "$output" "aws_version=latest"
+  assert_output_contains "$output" "tmux_ref=latest"
+  assert_output_contains "$output" "omz_ref=latest"
+  assert_output_contains "$output" "copy_files_rev=latest"
 
   output="$(WORKSPACE_INSTALL_JETBRAINS_LOCAL=1 \
     "$ROOT_DIR/install.sh" --cluster --print-config)"
@@ -251,7 +254,7 @@ test_shell_idempotency() {
   local first
   local second
 
-  mkdir -p -- "$home/.oh-my-zsh/.git"
+  mkdir -p -- "$home/.oh-my-zsh"
   printf 'user zsh\n' > "$home/.zshrc"
   printf 'user bash\n' > "$home/.bashrc"
   printf 'user profile\n' > "$home/.profile"

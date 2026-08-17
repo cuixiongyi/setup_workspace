@@ -11,7 +11,7 @@ if [[ "${WORKSPACE_INSTALL_AWS:-1}" != "1" ]]; then
 fi
 
 arch="$(workspace_detect_arch)" || workspace_die "unsupported architecture for AWS CLI: $(uname -m)"
-version="${WORKSPACE_AWS_VERSION:-2.36.2}"
+version="${WORKSPACE_AWS_VERSION:-latest}"
 
 case "$arch" in
   x86_64) aws_arch="x86_64" ;;
@@ -19,30 +19,35 @@ case "$arch" in
   *) workspace_die "unsupported AWS CLI architecture: $arch" ;;
 esac
 
-case "$version:$arch" in
-  2.36.2:x86_64)
-    sha256="88045926e48315681b73ec1d4e430ae6917b0eaffc6368d34bcc07bf9fe9fcb9"
-    ;;
-  2.36.2:aarch64)
-    sha256="7f41af8314f5a8d84742a7cf3e37e55d898355a6b605bcacb68adcf563c73064"
-    ;;
-  latest:*)
-    workspace_die "WORKSPACE_AWS_VERSION=latest is intentionally unsupported; pin and checksum a release"
-    ;;
-  *)
-    workspace_die "no trusted checksum is recorded for AWS CLI $version on $arch"
-    ;;
-esac
-
-url="https://awscli.amazonaws.com/awscli-exe-linux-${aws_arch}-${version}.zip"
+if [[ "$version" == "latest" ]]; then
+  archive="awscli-exe-linux-${aws_arch}.zip"
+else
+  archive="awscli-exe-linux-${aws_arch}-${version}.zip"
+fi
+url="https://awscli.amazonaws.com/$archive"
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf -- "$tmp_dir"' EXIT
 zip_file="$tmp_dir/awscliv2.zip"
+sig_file="$tmp_dir/awscliv2.sig"
+gnupg_home="$tmp_dir/gnupg"
 
 workspace_log "downloading AWS CLI v2 ($version)"
 workspace_download "$url" "$zip_file"
-printf '%s  %s\n' "$sha256" "$zip_file" | sha256sum -c -
+workspace_download "${url}.sig" "$sig_file"
+
+workspace_require_cmd gpg
+mkdir -m 0700 -- "$gnupg_home"
+gpg --batch --quiet --homedir "$gnupg_home" \
+  --import "$WORKSPACE_ROOT/install/aws-cli-public-key.asc"
+fingerprint="$(
+  gpg --batch --homedir "$gnupg_home" --with-colons --fingerprint \
+    | awk -F: '$1 == "fpr" { print $10; exit }'
+)"
+[[ "$fingerprint" == "FB5DB77FD5C118B80511ADA8A6310ACC4672475C" ]] ||
+  workspace_die "the bundled AWS CLI signing key has an unexpected fingerprint"
+gpg --batch --quiet --homedir "$gnupg_home" --verify "$sig_file" "$zip_file" ||
+  workspace_die "AWS CLI signature verification failed"
 unzip -q "$zip_file" -d "$tmp_dir"
 
 if [[ -d /usr/local/aws-cli/v2 ]]; then

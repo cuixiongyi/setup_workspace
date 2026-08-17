@@ -12,19 +12,32 @@ workspace_install_file "$WORKSPACE_ROOT/configs/workspace.profile" "$HOME/.confi
 
 omz_dir="${ZSH:-$HOME/.oh-my-zsh}"
 omz_repo="${WORKSPACE_OMZ_REPO:-https://github.com/ohmyzsh/ohmyzsh.git}"
-omz_ref="${WORKSPACE_OMZ_REF:-97b27bb2ec0701330b18c2d3e340b22e742b3fa8}"
+omz_ref="${WORKSPACE_OMZ_REF:-latest}"
 
 if [[ ! -d "$omz_dir/.git" ]]; then
   if [[ -e "$omz_dir" ]]; then
     workspace_warn "$omz_dir exists but is not a git checkout; leaving it unchanged"
   else
-    workspace_log "cloning Oh My Zsh at $omz_ref"
-    git clone --filter=blob:none --no-checkout "$omz_repo" "$omz_dir"
-    git -C "$omz_dir" fetch --depth 1 origin "$omz_ref"
-    git -C "$omz_dir" checkout --detach FETCH_HEAD
+    workspace_log "cloning Oh My Zsh"
+    git clone --filter=blob:none "$omz_repo" "$omz_dir"
   fi
 else
-  workspace_log "Oh My Zsh already installed; not changing its revision"
+  current_origin="$(git -C "$omz_dir" remote get-url origin 2>/dev/null || true)"
+  if [[ "$current_origin" != "$omz_repo" ]]; then
+    workspace_warn "updating Oh My Zsh origin: $current_origin -> $omz_repo"
+    git -C "$omz_dir" remote set-url origin "$omz_repo"
+  fi
+
+  if [[ -n "$(git -C "$omz_dir" status --porcelain)" ]]; then
+    workspace_die "$omz_dir contains local changes; move or commit them before updating Oh My Zsh"
+  fi
+fi
+
+if [[ -d "$omz_dir/.git" ]]; then
+  workspace_log "updating Oh My Zsh to $omz_ref"
+  git -C "$omz_dir" fetch --prune origin
+  omz_commit="$(workspace_git_remote_commit "$omz_dir" "$omz_ref")"
+  git -C "$omz_dir" checkout --detach "$omz_commit"
 fi
 
 # Remove the exact legacy block produced by zshrc_setup.py, if present.

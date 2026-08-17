@@ -11,14 +11,8 @@ if [[ "${WORKSPACE_INSTALL_CONDA:-1}" != "1" ]]; then
 fi
 
 arch="$(workspace_detect_arch)" || workspace_die "unsupported architecture: $(uname -m)"
-version="py312_26.5.3-2"
 case "$arch" in
-  x86_64)
-    sha256="37606f9f03ced8ef60f4ffc76b21dda01728eac8a632dcab316c891cea4fe2f5"
-    ;;
-  aarch64)
-    sha256="822923b30d789477964ef5589f86de5a72ac4c584bad3b9f72d97190e13d776f"
-    ;;
+  x86_64|aarch64) ;;
   *)
     workspace_die "unsupported Miniconda architecture: $arch"
     ;;
@@ -33,23 +27,44 @@ platform_id="ubuntu-${VERSION_ID}-${arch}"
 conda_dir="${WORKSPACE_CONDA_DIR:-$HOME/.local/opt/miniconda-${platform_id}}"
 conda_bin="$conda_dir/bin/conda"
 
-if [[ ! -x "$conda_bin" ]]; then
-  if [[ -e "$conda_dir" ]]; then
-    workspace_die "$conda_dir exists but does not contain a working conda; move it aside or set WORKSPACE_CONDA_DIR"
-  fi
+if [[ -e "$conda_dir" && ! -x "$conda_bin" ]]; then
+  workspace_die "$conda_dir exists but does not contain a working conda; move it aside or set WORKSPACE_CONDA_DIR"
+fi
 
-  tmp_dir="$(mktemp -d)"
-  trap 'rm -rf -- "$tmp_dir"' EXIT
-  installer="$tmp_dir/miniconda.sh"
-  url="https://repo.anaconda.com/miniconda/Miniconda3-${version}-Linux-${arch}.sh"
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf -- "$tmp_dir"' EXIT
+installer="$tmp_dir/miniconda.sh"
+index_file="$tmp_dir/index.html"
+installer_name="Miniconda3-latest-Linux-${arch}.sh"
+url="https://repo.anaconda.com/miniconda/$installer_name"
 
-  workspace_log "downloading Miniconda $version for $arch"
-  workspace_download "$url" "$installer"
-  printf '%s  %s\n' "$sha256" "$installer" | sha256sum -c -
+workspace_log "downloading the latest Miniconda for $arch"
+workspace_download "https://repo.anaconda.com/miniconda/" "$index_file"
+sha256="$(
+  awk -v filename="$installer_name" '
+    index($0, "href=\"" filename "\"") { found = 1; next }
+    found {
+      line = $0
+      gsub(/<[^>]*>/, "", line)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      if (length(line) == 64 && line ~ /^[0-9a-f]+$/) {
+        print line
+        exit
+      }
+    }
+  ' "$index_file"
+)"
+[[ "$sha256" =~ ^[0-9a-f]{64}$ ]] ||
+  workspace_die "could not read the official SHA-256 for $installer_name"
+workspace_download "$url" "$installer"
+printf '%s  %s\n' "$sha256" "$installer" | sha256sum -c -
+
+if [[ -x "$conda_bin" ]]; then
+  workspace_log "updating Miniconda in $conda_dir"
+  bash "$installer" -b -u -p "$conda_dir"
+else
   bash "$installer" -b -p "$conda_dir"
   workspace_log "installed Miniconda in $conda_dir"
-else
-  workspace_log "Miniconda already present in $conda_dir"
 fi
 
 # Do not use `conda init`; shell integration is sourced from the managed shell

@@ -27,6 +27,7 @@ packages=(
   openssh-client
   less
   groff
+  gnupg
 )
 
 install_gui=0
