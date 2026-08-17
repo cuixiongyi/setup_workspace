@@ -83,10 +83,30 @@ host-local stable path:
 ```
 
 A new interactive shell atomically repoints this symlink to the current
-`SSH_AUTH_SOCK`. On tmux attach, `update-environment` imports the latest
-forwarded socket and a named `client-attached` hook refreshes the stable link
-for every session on that host. Existing panes continue to use the stable
-pathname.
+`SSH_AUTH_SOCK`. In zsh, a prompt hook also detects an agent started inside a
+tmux pane and publishes it when the prompt returns. On tmux attach,
+`update-environment` imports the latest forwarded socket and a named
+`client-attached` hook refreshes the stable link for every session on that
+host. Existing panes continue to use the stable pathname.
+
+Start a local agent with either standard shell form:
+
+```zsh
+workspace-agent
+# optionally name one or more keys:
+workspace-agent ~/.ssh/id_ed25519
+
+# The equivalent standard commands are:
+eval "$(ssh-agent -s)"
+ssh-add
+```
+
+`workspace-agent` reuses the current reachable agent or starts one when needed,
+runs `ssh-add`, publishes the stable socket to tmux, and updates the current
+zsh. The prompt hook also publishes agents started with the standard commands,
+so other existing tmux panes do not need `exec zsh`. A bare `ssh-agent` command
+is not sufficient because it only prints environment assignments; no program
+can change the environment of its already-running parent shell.
 
 This covers:
 

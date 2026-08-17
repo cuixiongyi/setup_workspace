@@ -2,7 +2,7 @@
 set -eu
 
 uid="$(id -u)"
-stable_dir="/tmp/setup-workspace-ssh-agent-$uid"
+stable_dir="${WORKSPACE_SSH_AGENT_DIR:-/tmp/setup-workspace-ssh-agent-$uid}"
 stable_socket="$stable_dir/agent.sock"
 
 fail() {
@@ -31,18 +31,83 @@ prepare_dir() {
   chmod 700 -- "$stable_dir"
 }
 
+resolve_socket() {
+  candidate="$1"
+  [ -S "$candidate" ] || return 1
+
+  # Resolve the complete chain before changing the stable link. Linking to an
+  # older setup_workspace stable link can otherwise create A -> B -> A.
+  resolved="$(readlink -f -- "$candidate" 2>/dev/null || true)"
+  [ -n "$resolved" ] && [ -S "$resolved" ] || return 1
+  printf '%s\n' "$resolved"
+}
+
 refresh_agent() {
   source_socket="${1:-${SSH_AUTH_SOCK:-}}"
   prepare_dir
 
-  if [ -n "$source_socket" ] && [ "$source_socket" != "$stable_socket" ] && [ -S "$source_socket" ]; then
-    tmp_link="$stable_dir/.agent.sock.$$"
-    rm -f -- "$tmp_link"
-    ln -s -- "$source_socket" "$tmp_link"
-    mv -Tf -- "$tmp_link" "$stable_socket"
+  if [ -n "$source_socket" ] && [ "$source_socket" != "$stable_socket" ]; then
+    source_target="$(resolve_socket "$source_socket" || true)"
+    stable_target="$(resolve_socket "$stable_socket" || true)"
+
+    if [ -n "$source_target" ] && [ "$source_target" != "$stable_target" ]; then
+      tmp_link="$stable_dir/.agent.sock.$$"
+      rm -f -- "$tmp_link"
+      ln -s -- "$source_target" "$tmp_link"
+      mv -Tf -- "$tmp_link" "$stable_socket"
+    fi
+  fi
+}
+
+publish_agent() {
+  refresh_agent "$1"
+
+  if [ -n "${TMUX:-}" ] && [ -S "$stable_socket" ] && command -v tmux >/dev/null 2>&1; then
+    tmux set-environment -g SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
+    tmux list-sessions -F '#{session_id}' 2>/dev/null | while IFS= read -r target_session; do
+      [ -n "$target_session" ] || continue
+      tmux set-environment -t "$target_session" SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
+    done
   fi
 
   printf '%s\n' "$stable_socket"
+}
+
+start_agent() {
+  prepare_dir
+  command -v ssh-agent >/dev/null 2>&1 || fail "ssh-agent is not installed"
+  command -v ssh-add >/dev/null 2>&1 || fail "ssh-add is not installed"
+
+  source_target="$(resolve_socket "${SSH_AUTH_SOCK:-}" || true)"
+  if [ -z "$source_target" ]; then
+    source_target="$(resolve_socket "$stable_socket" || true)"
+  fi
+
+  if [ -z "$source_target" ]; then
+    agent_output="$(ssh-agent -s)" || fail "could not start ssh-agent"
+    source_target="$(printf '%s\n' "$agent_output" | sed -n 's/^SSH_AUTH_SOCK=\([^;]*\);.*/\1/p')"
+    agent_pid="$(printf '%s\n' "$agent_output" | sed -n 's/^SSH_AGENT_PID=\([0-9][0-9]*\);.*/\1/p')"
+
+    if [ -z "$source_target" ] || [ -z "$agent_pid" ] || [ ! -S "$source_target" ]; then
+      case "$agent_pid" in
+        ''|*[!0-9]*) ;;
+        *) kill "$agent_pid" 2>/dev/null || true ;;
+      esac
+      fail "ssh-agent returned an invalid socket or process ID"
+    fi
+
+    pid_tmp="$stable_dir/.managed-agent.pid.$$"
+    socket_tmp="$stable_dir/.managed-agent.sock.$$"
+    printf '%s\n' "$agent_pid" > "$pid_tmp"
+    printf '%s\n' "$source_target" > "$socket_tmp"
+    chmod 600 -- "$pid_tmp" "$socket_tmp"
+    mv -Tf -- "$pid_tmp" "$stable_dir/managed-agent.pid"
+    mv -Tf -- "$socket_tmp" "$stable_dir/managed-agent.sock"
+    printf '[workspace-ssh-agent] started agent pid %s\n' "$agent_pid" >&2
+  fi
+
+  publish_agent "$source_target" >/dev/null
+  SSH_AUTH_SOCK="$stable_socket" ssh-add "$@"
 }
 
 show_status() {
@@ -76,6 +141,15 @@ case "${1:-refresh}" in
   refresh)
     shift || true
     refresh_agent "${1:-${SSH_AUTH_SOCK:-}}"
+    printf '%s\n' "$stable_socket"
+    ;;
+  publish)
+    shift || true
+    publish_agent "${1:-${SSH_AUTH_SOCK:-}}"
+    ;;
+  start)
+    shift || true
+    start_agent "$@"
     ;;
   path)
     prepare_dir
@@ -85,7 +159,7 @@ case "${1:-refresh}" in
     show_status
     ;;
   *)
-    printf 'Usage: %s [refresh [SOURCE_SOCKET]|path|status]\n' "$0" >&2
+    printf 'Usage: %s [refresh [SOURCE_SOCKET]|publish [SOURCE_SOCKET]|start [SSH_ADD_ARGS...]|path|status]\n' "$0" >&2
     exit 2
     ;;
 esac

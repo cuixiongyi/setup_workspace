@@ -8,17 +8,36 @@ esac
 export EDITOR="${EDITOR:-vim}"
 export VISUAL="${VISUAL:-$EDITOR}"
 
-# Refresh the host-local stable agent socket from the socket inherited by this
-# shell. On a cluster with a shared home, /tmp remains host-local, so every host
-# uses the same pathname without trying to put a Unix socket on NFS.
-if [ -x "$HOME/.local/bin/workspace-ssh-agent" ]; then
+# Publish an agent newly inherited or started by this shell, then use the
+# host-local stable path. A zsh precmd hook calls this again after commands such
+# as `eval "$(ssh-agent -s)"`; changing the symlink makes the agent immediately
+# available to existing tmux panes that already use the stable path.
+_workspace_sync_ssh_agent() {
+  _workspace_agent_helper="$HOME/.local/bin/workspace-ssh-agent"
+  [ -x "$_workspace_agent_helper" ] || return 0
+
+  if [ -z "${_workspace_agent_stable:-}" ]; then
+    _workspace_agent_stable="$("$_workspace_agent_helper" path 2>/dev/null || true)"
+  fi
+  [ -n "$_workspace_agent_stable" ] || return 0
+
   _workspace_agent_source="${SSH_AUTH_SOCK:-}"
-  _workspace_agent_stable="$("$HOME/.local/bin/workspace-ssh-agent" refresh "$_workspace_agent_source" 2>/dev/null || true)"
-  if [ -n "$_workspace_agent_stable" ] && [ -S "$_workspace_agent_stable" ]; then
+  if [ -n "$_workspace_agent_source" ] && \
+     [ "$_workspace_agent_source" != "$_workspace_agent_stable" ] && \
+     [ -S "$_workspace_agent_source" ]; then
+    _workspace_agent_published="$("$_workspace_agent_helper" publish "$_workspace_agent_source" 2>/dev/null || true)"
+    if [ -n "$_workspace_agent_published" ]; then
+      _workspace_agent_stable="$_workspace_agent_published"
+    fi
+  fi
+
+  if [ -S "$_workspace_agent_stable" ]; then
     export SSH_AUTH_SOCK="$_workspace_agent_stable"
   fi
-  unset _workspace_agent_source _workspace_agent_stable
-fi
+  unset _workspace_agent_helper _workspace_agent_source _workspace_agent_published
+}
+
+_workspace_sync_ssh_agent
 
 # Activate the platform-specific Miniconda prefix. Conda detects system virtual
 # packages such as glibc while solving, so a shared-home cluster should not use
