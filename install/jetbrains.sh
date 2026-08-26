@@ -13,16 +13,23 @@ remove_legacy_env_lines() {
 
   file="$(workspace_resolve_edit_path "$logical_file")"
   [[ -f "$file" ]] || return 0
-  tmp="$(workspace_neighbor_tmp "$file")"
 
   case "$kind" in
     shell)
+      if ! grep -Eq '^[[:space:]]*export[[:space:]]+(XDG_CACHE_HOME|XDG_CONFIG_HOME|XDG_DATA_HOME|TMPDIR)=/?(tmp|var/tmp)/jetbrains[_-]' "$file"; then
+        return 0
+      fi
+      tmp="$(workspace_neighbor_tmp "$file")"
       awk '
         $0 ~ /^[[:space:]]*export[[:space:]]+(XDG_CACHE_HOME|XDG_CONFIG_HOME|XDG_DATA_HOME|TMPDIR)=\/?(tmp|var\/tmp)\/jetbrains[_-][^[:space:]]*/ { next }
         { print }
       ' "$file" > "$tmp"
       ;;
     pam)
+      if ! grep -Eq '^[[:space:]]*(XDG_CACHE_HOME|XDG_CONFIG_HOME|XDG_DATA_HOME|TMPDIR)[[:space:]]+DEFAULT=/?(tmp|var/tmp)/jetbrains[_-]' "$file"; then
+        return 0
+      fi
+      tmp="$(workspace_neighbor_tmp "$file")"
       awk '
         $0 ~ /^[[:space:]]*(XDG_CACHE_HOME|XDG_CONFIG_HOME|XDG_DATA_HOME|TMPDIR)[[:space:]]+DEFAULT=\/?(tmp|var\/tmp)\/jetbrains[_-][^[:space:]]*/ { next }
         { print }

@@ -75,12 +75,24 @@ BASH_BODY
 
 cat > "$profile_body" <<'PROFILE_BODY'
 [ -r "$HOME/.config/setup_workspace/workspace.profile" ] && . "$HOME/.config/setup_workspace/workspace.profile"
+# Login bash does not always source .bashrc. shell-common.sh is idempotent, so
+# this is safe when .bashrc also sources workspace.bash.
+if [ -n "${BASH_VERSION:-}" ]; then
+  [ -r "$HOME/.config/setup_workspace/workspace.bash" ] && . "$HOME/.config/setup_workspace/workspace.bash"
+fi
 PROFILE_BODY
 
 workspace_prepend_managed_block "$HOME/.zshrc" '# >>> setup_workspace >>>' '# <<< setup_workspace <<<' "$zsh_body"
 workspace_replace_managed_block "$HOME/.bashrc" '# >>> setup_workspace >>>' '# <<< setup_workspace <<<' "$bash_body"
 workspace_replace_managed_block "$HOME/.profile" '# >>> setup_workspace login >>>' '# <<< setup_workspace login <<<' "$profile_body"
 workspace_replace_managed_block "$HOME/.zprofile" '# >>> setup_workspace login >>>' '# <<< setup_workspace login <<<' "$profile_body"
+if [[ -e "$HOME/.bash_profile" || -L "$HOME/.bash_profile" ]]; then
+  workspace_replace_managed_block \
+    "$HOME/.bash_profile" \
+    '# >>> setup_workspace login >>>' \
+    '# <<< setup_workspace login <<<' \
+    "$profile_body"
+fi
 
 if [[ "${WORKSPACE_SET_DEFAULT_SHELL:-0}" == "1" ]]; then
   zsh_path="$(command -v zsh)"

@@ -1,5 +1,12 @@
 # Shared shell setup for bash and zsh.
 
+# Sourced from interactive rc files and from bash login profiles. Skip a
+# second load so conda and PROMPT_COMMAND do not stack.
+if [ -n "${_WORKSPACE_SHELL_COMMON_LOADED:-}" ]; then
+  return 0
+fi
+_WORKSPACE_SHELL_COMMON_LOADED=1
+
 case ":$PATH:" in
   *":$HOME/.local/bin:"*) ;;
   *) export PATH="$HOME/.local/bin:$PATH" ;;
@@ -37,7 +44,41 @@ _workspace_sync_ssh_agent() {
   unset _workspace_agent_helper _workspace_agent_source _workspace_agent_published
 }
 
+# One-command replacement for `eval "$(ssh-agent -s)"` followed by `ssh-add`.
+# Reuses a reachable agent, starts one only when necessary, publishes the
+# host-local stable socket (including to tmux on this host), then updates this
+# shell. A bare `ssh-agent` command is not sufficient: it only prints
+# environment assignments and cannot change its parent shell.
+workspace-agent() {
+  _workspace_agent_rc=0
+  "$HOME/.local/bin/workspace-ssh-agent" start "$@" || _workspace_agent_rc=$?
+  _workspace_sync_ssh_agent
+  return "$_workspace_agent_rc"
+}
+
 _workspace_sync_ssh_agent
+
+# Re-publish after commands such as `eval "$(ssh-agent -s)"`. zsh uses a
+# precmd hook in workspace.zsh; bash uses PROMPT_COMMAND here.
+if [ -n "${BASH_VERSION:-}" ]; then
+  _workspace_prompt_decl="$(declare -p PROMPT_COMMAND 2>/dev/null || true)"
+  case "$_workspace_prompt_decl" in
+    'declare -a '*)
+      case " ${PROMPT_COMMAND[*]} " in
+        *' _workspace_sync_ssh_agent '*) ;;
+        *) PROMPT_COMMAND=(_workspace_sync_ssh_agent "${PROMPT_COMMAND[@]}") ;;
+      esac
+      ;;
+    *)
+      case "${PROMPT_COMMAND-}" in
+        *_workspace_sync_ssh_agent*) ;;
+        '') PROMPT_COMMAND=_workspace_sync_ssh_agent ;;
+        *) PROMPT_COMMAND="_workspace_sync_ssh_agent;${PROMPT_COMMAND}" ;;
+      esac
+      ;;
+  esac
+  unset _workspace_prompt_decl
+fi
 
 # Activate the platform-specific Miniconda prefix. Conda detects system virtual
 # packages such as glibc while solving, so a shared-home cluster should not use

@@ -51,8 +51,13 @@ moved aside. Arbitrary user `~/.ssh/rc` files are preserved with a warning.
 Old setup-managed XDG/TMPDIR exports are removed before the SSH migration check,
 so an old combined JetBrains/agent hook can also be recognized.
 
-The replacement uses a host-local stable socket under `/tmp` plus a tmux
-attach hook. It does not need an SSH rc hook.
+The replacement still uses a host-local stable socket under `/tmp`. A
+recognized legacy `~/.ssh/rc` is replaced with a managed hook that refreshes
+that socket (no NFS Unix socket), recreates host-local JetBrains directories
+when that helper is installed, and restores xauth. Arbitrary user `~/.ssh/rc`
+files stay untouched. Tmux attach remains a second refresh path, not the only
+one. Re-running the installer replaces a previously managed rc in place when
+the content changed, and is a no-op when it is already current.
 
 ## JetBrains
 

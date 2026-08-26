@@ -42,6 +42,38 @@ resolve_socket() {
   printf '%s\n' "$resolved"
 }
 
+atomic_symlink() {
+  dest="$1"
+  target="$2"
+  dest_dir="$(dirname -- "$dest")"
+  tmp_link="$dest_dir/.$(basename -- "$dest").$$"
+
+  rm -f -- "$tmp_link"
+  ln -s -- "$target" "$tmp_link"
+  mv -Tf -- "$tmp_link" "$dest"
+}
+
+# Older installs kept a per-host symlink under the shared home so long-lived
+# processes (Cursor, tmux panes) could follow a stable path. Keep that alias
+# pointed at the host-local stable socket when the directory already exists;
+# never create it, and never touch another host's symlink.
+refresh_legacy_socket() {
+  legacy_dir="${HOME}/.tmp/ssh-agent"
+  [ -d "$legacy_dir" ] && [ ! -L "$legacy_dir" ] || return 0
+  [ -S "$stable_socket" ] || return 0
+
+  agent_host="$(hostname -f 2>/dev/null || hostname)"
+  [ -n "$agent_host" ] || return 0
+  legacy_socket="$legacy_dir/$agent_host.sock"
+
+  if [ -e "$legacy_socket" ] && [ ! -L "$legacy_socket" ]; then
+    return 0
+  fi
+
+  current="$(readlink -- "$legacy_socket" 2>/dev/null || true)"
+  [ "$current" = "$stable_socket" ] || atomic_symlink "$legacy_socket" "$stable_socket"
+}
+
 refresh_agent() {
   source_socket="${1:-${SSH_AUTH_SOCK:-}}"
   prepare_dir
@@ -51,25 +83,32 @@ refresh_agent() {
     stable_target="$(resolve_socket "$stable_socket" || true)"
 
     if [ -n "$source_target" ] && [ "$source_target" != "$stable_target" ]; then
-      tmp_link="$stable_dir/.agent.sock.$$"
-      rm -f -- "$tmp_link"
-      ln -s -- "$source_target" "$tmp_link"
-      mv -Tf -- "$tmp_link" "$stable_socket"
+      atomic_symlink "$stable_socket" "$source_target"
     fi
   fi
+
+  refresh_legacy_socket
+}
+
+# Update every tmux server session on this host, including from ~/.ssh/rc and
+# from a non-tmux login shell. Running panes that already export the stable
+# pathname do not need this; it only keeps new panes from inheriting a raw
+# forwarded socket that will vanish on disconnect.
+publish_tmux() {
+  [ -S "$stable_socket" ] || return 0
+  command -v tmux >/dev/null 2>&1 || return 0
+  tmux list-sessions >/dev/null 2>&1 || return 0
+
+  tmux set-environment -g SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
+  tmux list-sessions -F '#{session_id}' 2>/dev/null | while IFS= read -r target_session; do
+    [ -n "$target_session" ] || continue
+    tmux set-environment -t "$target_session" SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
+  done
 }
 
 publish_agent() {
   refresh_agent "$1"
-
-  if [ -n "${TMUX:-}" ] && [ -S "$stable_socket" ] && command -v tmux >/dev/null 2>&1; then
-    tmux set-environment -g SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
-    tmux list-sessions -F '#{session_id}' 2>/dev/null | while IFS= read -r target_session; do
-      [ -n "$target_session" ] || continue
-      tmux set-environment -t "$target_session" SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
-    done
-  fi
-
+  publish_tmux
   printf '%s\n' "$stable_socket"
 }
 

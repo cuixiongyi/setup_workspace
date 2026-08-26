@@ -5,21 +5,11 @@
 
 # Detect an agent started in this shell as soon as the prompt returns. Since
 # every pane uses the same stable socket, no other pane needs to restart zsh.
+# `workspace-agent` is defined in shell-common.sh for both bash and zsh.
 if (( $+functions[_workspace_sync_ssh_agent] )); then
   autoload -Uz add-zsh-hook
   add-zsh-hook precmd _workspace_sync_ssh_agent
 fi
-
-# One-command replacement for `eval "$(ssh-agent -s)"` followed by `ssh-add`.
-# The helper reuses a reachable agent, starts one only when necessary, and
-# publishes it to every tmux session before this function updates this shell.
-workspace-agent() {
-  local _workspace_agent_rc
-  "$HOME/.local/bin/workspace-ssh-agent" start "$@"
-  _workspace_agent_rc=$?
-  _workspace_sync_ssh_agent
-  return "$_workspace_agent_rc"
-}
 
 unset LESS
 

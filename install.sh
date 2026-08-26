@@ -265,6 +265,7 @@ Profile: $WORKSPACE_PROFILE
 Scope:   $WORKSPACE_INSTALL_SCOPE
 
 Open a new shell, or run:
+  exec bash
   exec zsh
 
 SSH agent stable socket on every host:

@@ -1,0 +1,32 @@
+#!/bin/sh
+# setup_workspace SSH agent hook. Managed file; install/ssh-agent.sh replaces it.
+#
+# sshd runs this for every SSH session: interactive, tmux attach, IDEs, and
+# non-interactive commands. It must not write to stdout (scp/sftp). Helpers
+# take stdin from /dev/null so they cannot consume the xauth cookie sshd
+# feeds this script. Both helpers are idempotent and missing binaries are
+# skipped, so this file is safe when JetBrains localization is disabled.
+
+if [ -x "$HOME/.local/bin/workspace-ssh-agent" ]; then
+  "$HOME/.local/bin/workspace-ssh-agent" publish >/dev/null 2>&1 </dev/null || true
+fi
+
+# Recreate host-local JetBrains dirs after /var/tmp was wiped. Console logins
+# also do this from workspace.profile; IDEs and `ssh host command` only hit here.
+if [ -x "$HOME/.local/bin/workspace-jetbrains-local" ]; then
+  "$HOME/.local/bin/workspace-jetbrains-local" ensure >/dev/null 2>&1 </dev/null || true
+fi
+
+# sshd skips its built-in xauth when ~/.ssh/rc exists; restore that default.
+if [ -n "${DISPLAY:-}" ] && command -v xauth >/dev/null 2>&1; then
+  if read proto cookie; then
+    case "$DISPLAY" in
+      localhost:*)
+        echo add "unix:${DISPLAY#localhost:}" "$proto" "$cookie"
+        ;;
+      *)
+        echo add "$DISPLAY" "$proto" "$cookie"
+        ;;
+    esac | xauth -q - >/dev/null 2>&1 || true
+  fi
+fi

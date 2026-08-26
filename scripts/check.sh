@@ -15,7 +15,8 @@ for file in \
   "$ROOT_DIR/bin/workspace-tmux-agent" \
   "$ROOT_DIR/bin/workspace-jetbrains-local" \
   "$ROOT_DIR/configs/workspace.bash" \
-  "$ROOT_DIR/configs/workspace.profile"; do
+  "$ROOT_DIR/configs/workspace.profile" \
+  "$ROOT_DIR/configs/ssh.rc"; do
   if ! dash -n "$file"; then
     fail=1
   fi

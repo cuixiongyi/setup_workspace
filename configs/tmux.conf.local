@@ -58,8 +58,9 @@ bind-key -T copy-mode    TripleClick1Pane send-keys -X select-line \; send-keys 
 
 # Keep SSH agent forwarding stable across tmux reconnects. tmux first imports the
 # newest client SSH_AUTH_SOCK during attach; the hook repoints a host-local
-# stable symlink and normalizes all sessions back to that stable path. The zsh
-# prompt hook also publishes agents started from inside an existing pane.
+# stable symlink and normalizes all sessions back to that stable path. New SSH
+# logins also refresh that symlink from ~/.ssh/rc, so existing panes work even
+# before attach. Prompt hooks publish agents started inside a pane.
 set -g update-environment "DISPLAY KRB5CCNAME SSH_ASKPASS SSH_AUTH_SOCK SSH_AGENT_PID SSH_CONNECTION WINDOWID XAUTHORITY"
 set-hook -g 'client-attached[100]' 'run-shell "$HOME/.local/bin/workspace-tmux-agent #{session_id}"'
 

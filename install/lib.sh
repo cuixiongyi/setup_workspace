@@ -352,27 +352,59 @@ workspace_jetbrains_local_default() {
   fi
 }
 
+workspace_shared_lock_is_stale() {
+  local lock_dir="$1"
+  local owner="$lock_dir/owner"
+  local lock_host lock_pid my_host
+
+  [[ -r "$owner" ]] || return 1
+  lock_host="$(awk -F= '$1 == "host" { print substr($0, index($0, "=") + 1); exit }' "$owner")"
+  lock_pid="$(awk -F= '$1 == "pid" { print substr($0, index($0, "=") + 1); exit }' "$owner")"
+  my_host="$(hostname -f 2>/dev/null || hostname)"
+
+  [[ -n "$lock_host" && -n "$lock_pid" ]] || return 1
+  [[ "$lock_host" == "$my_host" ]] || return 1
+  [[ "$lock_pid" =~ ^[0-9]+$ ]] || return 1
+  if kill -0 "$lock_pid" 2>/dev/null; then
+    return 1
+  fi
+  return 0
+}
+
 workspace_acquire_shared_lock() {
   local state_dir="$HOME/.local/state/setup_workspace"
   local lock_dir="$state_dir/install.lock"
+  local attempt
 
   mkdir -p -- "$state_dir"
-  if ! mkdir -- "$lock_dir" 2>/dev/null; then
+  for attempt in 1 2; do
+    if mkdir -- "$lock_dir" 2>/dev/null; then
+      {
+        printf 'host=%s\n' "$(hostname -f 2>/dev/null || hostname)"
+        printf 'pid=%s\n' "$$"
+        printf 'started=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      } > "$lock_dir/owner"
+      WORKSPACE_SHARED_LOCK_DIR="$lock_dir"
+      export WORKSPACE_SHARED_LOCK_DIR
+      return 0
+    fi
+
+    if [[ "$attempt" -eq 1 ]] && workspace_shared_lock_is_stale "$lock_dir"; then
+      workspace_warn "removing stale shared-home install lock: $lock_dir"
+      if [[ -r "$lock_dir/owner" ]]; then
+        sed 's/^/[setup_workspace] stale lock: /' "$lock_dir/owner" >&2
+      fi
+      rm -f -- "$lock_dir/owner"
+      rmdir -- "$lock_dir" 2>/dev/null || true
+      continue
+    fi
+
     workspace_warn "shared-home installation lock exists: $lock_dir"
     if [[ -r "$lock_dir/owner" ]]; then
       sed 's/^/[setup_workspace] lock: /' "$lock_dir/owner" >&2
     fi
     workspace_die "another user-phase install may be running; retry later or inspect the lock"
-  fi
-
-  {
-    printf 'host=%s\n' "$(hostname -f 2>/dev/null || hostname)"
-    printf 'pid=%s\n' "$$"
-    printf 'started=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  } > "$lock_dir/owner"
-
-  WORKSPACE_SHARED_LOCK_DIR="$lock_dir"
-  export WORKSPACE_SHARED_LOCK_DIR
+  done
 }
 
 workspace_release_shared_lock() {
