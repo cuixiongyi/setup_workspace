@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+session="${1:-}"
+[ -n "$session" ] || exit 0
+command -v tmux >/dev/null 2>&1 || exit 0
+
+agent_helper="$HOME/.local/bin/workspace-ssh-agent"
+[ -x "$agent_helper" ] || exit 0
+
+source_socket=""
+env_line="$(tmux show-environment -t "$session" SSH_AUTH_SOCK 2>/dev/null || true)"
+case "$env_line" in
+  SSH_AUTH_SOCK=*) source_socket="${env_line#SSH_AUTH_SOCK=}" ;;
+esac
+
+stable_socket="$("$agent_helper" publish "$source_socket")" || exit 0
+[ -S "$stable_socket" ] || exit 0
