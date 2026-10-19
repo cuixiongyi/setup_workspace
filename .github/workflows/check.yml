@@ -1,0 +1,29 @@
+name: check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu:
+    strategy:
+      matrix:
+        image: ['ubuntu:22.04', 'ubuntu:24.04']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run checks in target Ubuntu
+        run: |
+          docker run --rm \
+            -v "$PWD:/workspace:ro" \
+            "${{ matrix.image }}" \
+            bash -lc '
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y shellcheck zsh dash git tmux coreutils findutils
+              cd /workspace
+              ./scripts/check.sh
+              ./scripts/test.sh
+            '

@@ -1,0 +1,204 @@
+#!/bin/sh
+set -eu
+
+uid="$(id -u)"
+stable_dir="${WORKSPACE_SSH_AGENT_DIR:-/tmp/setup-workspace-ssh-agent-$uid}"
+stable_socket="$stable_dir/agent.sock"
+
+fail() {
+  printf '[workspace-ssh-agent] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+prepare_dir() {
+  if [ -L "$stable_dir" ]; then
+    fail "$stable_dir must not be a symlink"
+  fi
+
+  if [ -e "$stable_dir" ] && [ ! -d "$stable_dir" ]; then
+    fail "$stable_dir exists but is not a directory"
+  fi
+
+  if [ ! -d "$stable_dir" ]; then
+    old_umask="$(umask)"
+    umask 077
+    mkdir -p -- "$stable_dir"
+    umask "$old_umask"
+  fi
+
+  owner_uid="$(stat -c '%u' "$stable_dir" 2>/dev/null || true)"
+  [ "$owner_uid" = "$uid" ] || fail "$stable_dir is not owned by uid $uid"
+  chmod 700 -- "$stable_dir"
+}
+
+resolve_socket() {
+  candidate="$1"
+  [ -S "$candidate" ] || return 1
+
+  # Resolve the complete chain before changing the stable link. Linking to an
+  # older setup_workspace stable link can otherwise create A -> B -> A.
+  resolved="$(readlink -f -- "$candidate" 2>/dev/null || true)"
+  [ -n "$resolved" ] && [ -S "$resolved" ] || return 1
+  printf '%s\n' "$resolved"
+}
+
+atomic_symlink() {
+  dest="$1"
+  target="$2"
+  dest_dir="$(dirname -- "$dest")"
+  tmp_link="$dest_dir/.$(basename -- "$dest").$$"
+
+  rm -f -- "$tmp_link"
+  ln -s -- "$target" "$tmp_link"
+  mv -Tf -- "$tmp_link" "$dest"
+}
+
+# Older installs kept a per-host symlink under the shared home so long-lived
+# processes (Cursor, tmux panes) could follow a stable path. Keep that alias
+# pointed at the host-local stable socket when the directory already exists;
+# never create it, and never touch another host's symlink.
+refresh_legacy_socket() {
+  legacy_dir="${HOME}/.tmp/ssh-agent"
+  [ -d "$legacy_dir" ] && [ ! -L "$legacy_dir" ] || return 0
+  [ -S "$stable_socket" ] || return 0
+
+  agent_host="$(hostname -f 2>/dev/null || hostname)"
+  [ -n "$agent_host" ] || return 0
+  legacy_socket="$legacy_dir/$agent_host.sock"
+
+  if [ -e "$legacy_socket" ] && [ ! -L "$legacy_socket" ]; then
+    return 0
+  fi
+
+  current="$(readlink -- "$legacy_socket" 2>/dev/null || true)"
+  [ "$current" = "$stable_socket" ] || atomic_symlink "$legacy_socket" "$stable_socket"
+}
+
+refresh_agent() {
+  source_socket="${1:-${SSH_AUTH_SOCK:-}}"
+  prepare_dir
+
+  if [ -n "$source_socket" ] && [ "$source_socket" != "$stable_socket" ]; then
+    source_target="$(resolve_socket "$source_socket" || true)"
+    stable_target="$(resolve_socket "$stable_socket" || true)"
+
+    if [ -n "$source_target" ] && [ "$source_target" != "$stable_target" ]; then
+      atomic_symlink "$stable_socket" "$source_target"
+    fi
+  fi
+
+  refresh_legacy_socket
+}
+
+# Update every tmux server session on this host, including from ~/.ssh/rc and
+# from a non-tmux login shell. Running panes that already export the stable
+# pathname do not need this; it only keeps new panes from inheriting a raw
+# forwarded socket that will vanish on disconnect.
+publish_tmux() {
+  [ -S "$stable_socket" ] || return 0
+  command -v tmux >/dev/null 2>&1 || return 0
+  tmux list-sessions >/dev/null 2>&1 || return 0
+
+  tmux set-environment -g SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
+  tmux list-sessions -F '#{session_id}' 2>/dev/null | while IFS= read -r target_session; do
+    [ -n "$target_session" ] || continue
+    tmux set-environment -t "$target_session" SSH_AUTH_SOCK "$stable_socket" 2>/dev/null || true
+  done
+}
+
+publish_agent() {
+  refresh_agent "$1"
+  publish_tmux
+  printf '%s\n' "$stable_socket"
+}
+
+start_agent() {
+  prepare_dir
+  command -v ssh-agent >/dev/null 2>&1 || fail "ssh-agent is not installed"
+  command -v ssh-add >/dev/null 2>&1 || fail "ssh-add is not installed"
+
+  source_target="$(resolve_socket "${SSH_AUTH_SOCK:-}" || true)"
+  if [ -z "$source_target" ]; then
+    source_target="$(resolve_socket "$stable_socket" || true)"
+  fi
+
+  if [ -z "$source_target" ]; then
+    agent_output="$(ssh-agent -s)" || fail "could not start ssh-agent"
+    source_target="$(printf '%s\n' "$agent_output" | sed -n 's/^SSH_AUTH_SOCK=\([^;]*\);.*/\1/p')"
+    agent_pid="$(printf '%s\n' "$agent_output" | sed -n 's/^SSH_AGENT_PID=\([0-9][0-9]*\);.*/\1/p')"
+
+    if [ -z "$source_target" ] || [ -z "$agent_pid" ] || [ ! -S "$source_target" ]; then
+      case "$agent_pid" in
+        ''|*[!0-9]*) ;;
+        *) kill "$agent_pid" 2>/dev/null || true ;;
+      esac
+      fail "ssh-agent returned an invalid socket or process ID"
+    fi
+
+    pid_tmp="$stable_dir/.managed-agent.pid.$$"
+    socket_tmp="$stable_dir/.managed-agent.sock.$$"
+    printf '%s\n' "$agent_pid" > "$pid_tmp"
+    printf '%s\n' "$source_target" > "$socket_tmp"
+    chmod 600 -- "$pid_tmp" "$socket_tmp"
+    mv -Tf -- "$pid_tmp" "$stable_dir/managed-agent.pid"
+    mv -Tf -- "$socket_tmp" "$stable_dir/managed-agent.sock"
+    printf '[workspace-ssh-agent] started agent pid %s\n' "$agent_pid" >&2
+  fi
+
+  publish_agent "$source_target" >/dev/null
+  SSH_AUTH_SOCK="$stable_socket" ssh-add "$@"
+}
+
+show_status() {
+  prepare_dir
+  printf 'stable socket: %s\n' "$stable_socket"
+
+  if [ -L "$stable_socket" ]; then
+    printf 'target: %s\n' "$(readlink -- "$stable_socket")"
+  elif [ -S "$stable_socket" ]; then
+    printf 'target: direct socket\n'
+  else
+    printf 'target: unavailable\n'
+  fi
+
+  if [ -S "$stable_socket" ] && command -v ssh-add >/dev/null 2>&1; then
+    if SSH_AUTH_SOCK="$stable_socket" ssh-add -l; then
+      return 0
+    fi
+    rc=$?
+    if [ "$rc" -eq 1 ]; then
+      printf 'agent is reachable but has no identities\n'
+      return 0
+    fi
+    return "$rc"
+  fi
+
+  return 1
+}
+
+case "${1:-refresh}" in
+  refresh)
+    shift || true
+    refresh_agent "${1:-${SSH_AUTH_SOCK:-}}"
+    printf '%s\n' "$stable_socket"
+    ;;
+  publish)
+    shift || true
+    publish_agent "${1:-${SSH_AUTH_SOCK:-}}"
+    ;;
+  start)
+    shift || true
+    start_agent "$@"
+    ;;
+  path)
+    prepare_dir
+    printf '%s\n' "$stable_socket"
+    ;;
+  status)
+    show_status
+    ;;
+  *)
+    printf 'Usage: %s [refresh [SOURCE_SOCKET]|publish [SOURCE_SOCKET]|start [SSH_ADD_ARGS...]|path|status]\n' "$0" >&2
+    exit 2
+    ;;
+esac

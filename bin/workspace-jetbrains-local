@@ -1,0 +1,106 @@
+#!/bin/sh
+set -eu
+
+uid="$(id -u)"
+config_file="$HOME/.config/setup_workspace/local-root"
+default_root="/var/tmp/setup-workspace-$uid"
+
+fail() {
+  printf '[workspace-jetbrains-local] ERROR: %s\n' "$*" >&2
+  exit 1
+}
+
+read_root() {
+  if [ -n "${WORKSPACE_LOCAL_ROOT:-}" ]; then
+    printf '%s\n' "$WORKSPACE_LOCAL_ROOT"
+  elif [ -r "$config_file" ]; then
+    IFS= read -r saved_root < "$config_file" || true
+    printf '%s\n' "${saved_root:-$default_root}"
+  else
+    printf '%s\n' "$default_root"
+  fi
+}
+
+validate_root() {
+  root="$1"
+  case "$root" in
+    /*) ;;
+    *) fail "local root must be an absolute path: $root" ;;
+  esac
+  case "$root" in
+    /tmp|/tmp/*|/run|/run/*)
+      fail "JetBrains state requires persistent local storage, not $root"
+      ;;
+  esac
+
+  # This list mirrors workspace_filesystem_is_networked in install/lib.sh.
+  # Recheck here because the saved root may differ from HOME and this helper is
+  # intentionally standalone after installation.
+  fs_type="$(stat -f -c '%T' "$(dirname -- "$root")" 2>/dev/null || true)"
+  case "$fs_type" in
+    nfs|nfs4|cifs|smb2|smbfs|autofs|afs|ceph|ceph-fuse|glusterfs|gpfs|lustre|panfs|9p|davfs|davfs2|fuse.sshfs|sshfs)
+      fail "local root parent is on a network filesystem ($fs_type): $root"
+      ;;
+  esac
+}
+
+prepare_dir() {
+  path="$1"
+
+  if [ -L "$path" ]; then
+    fail "$path must not be a symlink"
+  fi
+  if [ -e "$path" ] && [ ! -d "$path" ]; then
+    fail "$path exists but is not a directory"
+  fi
+  if [ ! -d "$path" ]; then
+    old_umask="$(umask)"
+    umask 077
+    mkdir -p -- "$path"
+    umask "$old_umask"
+  fi
+
+  owner_uid="$(stat -c '%u' "$path" 2>/dev/null || true)"
+  [ "$owner_uid" = "$uid" ] || fail "$path is not owned by uid $uid"
+  chmod 700 -- "$path"
+}
+
+ensure_dirs() {
+  root="$1"
+  validate_root "$root"
+  prepare_dir "$root"
+  root_fs_type="$(stat -f -c '%T' "$root" 2>/dev/null || true)"
+  case "$root_fs_type" in
+    nfs|nfs4|cifs|smb2|smbfs|autofs|afs|ceph|ceph-fuse|glusterfs|gpfs|lustre|panfs|9p|davfs|davfs2|fuse.sshfs|sshfs)
+      fail "local root is on a network filesystem ($root_fs_type): $root"
+      ;;
+  esac
+  prepare_dir "$root/jetbrains"
+  prepare_dir "$root/jetbrains/cache"
+  prepare_dir "$root/jetbrains/config"
+  prepare_dir "$root/jetbrains/share"
+}
+
+root="$(read_root)"
+case "${1:-ensure}" in
+  ensure)
+    ensure_dirs "$root"
+    printf '%s\n' "$root"
+    ;;
+  path)
+    validate_root "$root"
+    printf '%s\n' "$root"
+    ;;
+  status)
+    ensure_dirs "$root"
+    printf 'local root: %s\n' "$root"
+    printf 'filesystem: %s\n' "$(stat -f -c '%T' "$root" 2>/dev/null || printf unknown)"
+    printf 'cache: %s\n' "$root/jetbrains/cache"
+    printf 'config: %s\n' "$root/jetbrains/config"
+    printf 'share: %s\n' "$root/jetbrains/share"
+    ;;
+  *)
+    printf 'Usage: %s [ensure|path|status]\n' "$0" >&2
+    exit 2
+    ;;
+esac
