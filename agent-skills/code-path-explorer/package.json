@@ -1,0 +1,10 @@
+{
+  "name": "code-path-explorer",
+  "private": true,
+  "description": "Builds and checks interactive journey explorers. Only check.mjs needs these dependencies.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

@@ -45,6 +45,15 @@ The cluster profile defaults to:
 If `HOME` is on a network filesystem, JetBrains state automatically uses
 `/var/tmp/setup-workspace-$UID` on the local host.
 
+### Agent skills only (any OS, including macOS)
+
+```bash
+./install/agent-skills.sh
+```
+
+This links the skills for Claude Code and Codex without the rest of the
+installer. See [Agent skills](#agent-skills).
+
 ## Installation phases
 
 `--system-only` changes machine-local state:
@@ -59,8 +68,9 @@ If `HOME` is on a network filesystem, JetBrains state automatically uses
 - the platform-specific Miniconda prefix;
 - SSH-agent and tmux helpers;
 - shell/tmux configuration;
-- JetBrains directory links; and
-- `copy-files-in-parallel`.
+- JetBrains directory links;
+- `copy-files-in-parallel`; and
+- agent skill links for Claude Code and Codex.
 
 The user phase takes an atomic directory lock at:
 
@@ -313,6 +323,82 @@ The upstream tmux-config checkout lives under:
 `~/.tmux.conf.local` points to this repository's managed local configuration.
 Local changes in the managed checkout cause installation to stop instead of
 being discarded.
+
+## Agent skills
+
+Each folder under `agent-skills/` is one skill in the `SKILL.md` format that
+Claude Code and Codex share. The user phase of `install.sh` installs them; on
+any other system, or to install only the skills, run the step on its own.
+
+### Install
+
+Requirements: `git`, `bash`, and for `code-path-explorer` Node 20 or later
+with `npm`.
+
+```bash
+git clone https://github.com/cuixiongyi/setup_workspace.git
+cd setup_workspace
+./install/agent-skills.sh
+```
+
+The script links each skill into both agents' personal skill folders and runs
+`npm ci` in each skill folder that has a `package-lock.json`:
+
+```text
+~/.claude/skills/<name>  -> agent-skills/<name>   # Claude Code: /<name>
+~/.agents/skills/<name>  -> agent-skills/<name>   # Codex: $<name>
+```
+
+An existing file or folder at a link path is moved aside to
+`<path>.pre-setup-workspace` first. On macOS that move needs GNU `mv`, so
+remove or rename the old entry yourself if the script stops there.
+Set `WORKSPACE_INSTALL_SKILL_DEPS=0` to skip `npm ci`; without `npm`, the
+script warns and links the skills anyway.
+
+`code-path-explorer` also needs a browser for its check script. Install
+Playwright's Chromium once per machine:
+
+```bash
+cd agent-skills/code-path-explorer
+npx playwright install chromium
+```
+
+Or skip the download and point it at an installed Chrome or Chromium when you
+run the check, for example on macOS:
+
+```bash
+export CHROMIUM_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+### Verify
+
+Start a new Claude Code session and run `/skills`, or start Codex and type
+`$`. `code-path-explorer` should be listed. To check the tooling itself:
+
+```bash
+cd agent-skills/code-path-explorer
+node scripts/build.mjs examples/python/cancel-export.json /tmp/cancel-export.html --root examples/python
+node scripts/check.mjs examples/python/cancel-export.html
+```
+
+### Use
+
+In any repository, ask either agent for an explorer of one journey, for
+example `/code-path-explorer cancel a running export` in Claude Code or
+`$code-path-explorer cancel a running export` in Codex. The model and the
+generated page are written into that repository, under `docs/plots/` by
+default. A Python or other non-Node repository needs nothing installed:
+the skill's own Playwright is used.
+
+### Update and remove
+
+The links point at this checkout, so `git pull` updates every skill. Rerun
+`./install/agent-skills.sh` after a pull that adds a skill or changes its
+dependencies. To remove one skill:
+
+```bash
+rm ~/.claude/skills/code-path-explorer ~/.agents/skills/code-path-explorer
+```
 
 ## Migration
 

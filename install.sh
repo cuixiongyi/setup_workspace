@@ -229,6 +229,7 @@ run_user_phase() {
     tmux.sh
     zsh.sh
     tools.sh
+    agent-skills.sh
   )
   local step
   for step in "${steps[@]}"; do

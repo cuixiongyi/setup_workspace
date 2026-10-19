@@ -1,0 +1,1500 @@
+{
+  "$schema": "../../scripts/journey.schema.json",
+  "format": "journey-explorer/2",
+  "title": "Cancel an export · Python example",
+  "lead": "A person presses Cancel on an export. A queued export ends at once; a running one is asked to stop and the worker ends it before its next part. Opens at `Component / schema`; switch to `Function / table` for every method and table.",
+  "note": "A self-contained example: the cited files are under examples/python. Build with --root examples/python. Payloads are synthetic.",
+  "export": "cancel-export.json",
+  "outside": [
+    "Creating the export, rendering, and downloading the file."
+  ],
+  "levels": [
+    {
+      "id": "host",
+      "label": "Host"
+    },
+    {
+      "id": "process",
+      "label": "Process"
+    },
+    {
+      "id": "component",
+      "label": "Component / schema"
+    },
+    {
+      "id": "file",
+      "label": "File"
+    },
+    {
+      "id": "unit",
+      "label": "Function / table"
+    }
+  ],
+  "defaultLevel": "component",
+  "participants": [
+    {
+      "id": "host-device",
+      "name": "Person’s device",
+      "level": "host",
+      "parent": null,
+      "kind": "device",
+      "about": {
+        "what": "The machine running the Exports page.",
+        "evidence": "web/exports.js cancelExport",
+        "where": "Any browser."
+      }
+    },
+    {
+      "id": "browser",
+      "name": "Browser",
+      "level": "process",
+      "parent": "host-device",
+      "kind": "client",
+      "about": {
+        "what": "The web client.",
+        "evidence": "web/exports.js cancelExport"
+      }
+    },
+    {
+      "id": "web-page",
+      "name": "Exports page",
+      "level": "component",
+      "parent": "browser",
+      "kind": "component",
+      "about": {
+        "what": "The page that lists exports and offers Cancel.",
+        "evidence": "web/exports.js cancelExport"
+      }
+    },
+    {
+      "id": "web-file",
+      "name": "exports.js",
+      "level": "file",
+      "parent": "web-page",
+      "kind": "file",
+      "about": {
+        "what": "Browser code for the Exports page.",
+        "evidence": "web/exports.js cancelExport"
+      },
+      "detail": "web/exports.js"
+    },
+    {
+      "id": "fn-js-cancel",
+      "name": "cancelExport",
+      "level": "unit",
+      "parent": "web-file",
+      "kind": "function",
+      "about": {
+        "what": "Posts the cancel request; anything but 2xx is an error.",
+        "evidence": "web/exports.js cancelExport"
+      },
+      "detail": "cancelExport(exportId)"
+    },
+    {
+      "id": "host-servers",
+      "name": "Servers",
+      "level": "host",
+      "parent": null,
+      "kind": "host",
+      "about": {
+        "what": "The API process, the worker and PostgreSQL.",
+        "evidence": "app/api/routes.py router; app/worker/runner.py run_once",
+        "where": "The service’s own hosts."
+      }
+    },
+    {
+      "id": "api",
+      "name": "API process",
+      "level": "process",
+      "parent": "host-servers",
+      "kind": "process",
+      "about": {
+        "what": "The FastAPI application.",
+        "evidence": "app/api/routes.py router",
+        "does": "Authenticates the person and changes export rows through the repository."
+      }
+    },
+    {
+      "id": "api-http",
+      "name": "HTTP layer",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "Routes: parse the request, call the service, choose the status.",
+        "evidence": "app/api/routes.py cancel_export"
+      }
+    },
+    {
+      "id": "routes-file",
+      "name": "routes.py",
+      "level": "file",
+      "parent": "api-http",
+      "kind": "file",
+      "about": {
+        "what": "Export routes.",
+        "evidence": "app/api/routes.py router"
+      },
+      "detail": "app/api/routes.py"
+    },
+    {
+      "id": "fn-route",
+      "name": "POST …/cancel",
+      "level": "unit",
+      "parent": "routes-file",
+      "kind": "route",
+      "about": {
+        "what": "Route handler. 200 when the export ended, 202 while it is stopping, 404 when it is not the person’s.",
+        "evidence": "app/api/routes.py cancel_export"
+      },
+      "detail": "POST /exports/{export_id}/cancel"
+    },
+    {
+      "id": "api-service",
+      "name": "Service layer",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "Use cases. Decides who may act; never writes SQL.",
+        "evidence": "app/services/exports.py ExportService"
+      }
+    },
+    {
+      "id": "service-file",
+      "name": "exports.py",
+      "level": "file",
+      "parent": "api-service",
+      "kind": "file",
+      "about": {
+        "what": "The export service.",
+        "evidence": "app/services/exports.py ExportService"
+      },
+      "detail": "app/services/exports.py"
+    },
+    {
+      "id": "fn-svc-cancel",
+      "name": "cancel",
+      "level": "unit",
+      "parent": "service-file",
+      "kind": "method",
+      "about": {
+        "what": "Checks ownership, then asks the repository to cancel.",
+        "evidence": "app/services/exports.py ExportService.cancel"
+      },
+      "detail": "ExportService.cancel"
+    },
+    {
+      "id": "fn-owner",
+      "name": "_require_owner",
+      "level": "unit",
+      "parent": "service-file",
+      "kind": "method",
+      "about": {
+        "what": "Raises NotFound unless the export belongs to this person.",
+        "evidence": "app/services/exports.py ExportService._require_owner"
+      },
+      "detail": "ExportService._require_owner"
+    },
+    {
+      "id": "api-data",
+      "name": "Data access",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "The API’s repository over exports.export_job.",
+        "evidence": "app/db/exports_repo.py ExportRepository"
+      }
+    },
+    {
+      "id": "repo-file",
+      "name": "exports_repo.py",
+      "level": "file",
+      "parent": "api-data",
+      "kind": "file",
+      "about": {
+        "what": "PostgreSQL access to exports.",
+        "evidence": "app/db/exports_repo.py ExportRepository"
+      },
+      "detail": "app/db/exports_repo.py"
+    },
+    {
+      "id": "fn-repo-owner",
+      "name": "owner_of",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "method",
+      "about": {
+        "what": "Reads the export’s owner.",
+        "evidence": "app/db/exports_repo.py ExportRepository.owner_of"
+      },
+      "detail": "ExportRepository.owner_of"
+    },
+    {
+      "id": "fn-repo-cancel",
+      "name": "cancel",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "method",
+      "about": {
+        "what": "One transaction: lock the row, then end a queued export or record a stop request on a running one.",
+        "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+      },
+      "detail": "ExportRepository.cancel"
+    },
+    {
+      "id": "worker",
+      "name": "Export worker",
+      "level": "process",
+      "parent": "host-servers",
+      "kind": "process",
+      "about": {
+        "what": "Claims queued exports and uploads them in parts.",
+        "evidence": "app/worker/runner.py run_once",
+        "does": "Moves an export it claimed to running, then to succeeded or cancelled."
+      }
+    },
+    {
+      "id": "wk-runner",
+      "name": "Job runner",
+      "level": "component",
+      "parent": "worker",
+      "kind": "component",
+      "about": {
+        "what": "The loop that claims and runs one export.",
+        "evidence": "app/worker/runner.py run_export"
+      }
+    },
+    {
+      "id": "runner-file",
+      "name": "runner.py",
+      "level": "file",
+      "parent": "wk-runner",
+      "kind": "file",
+      "about": {
+        "what": "The worker loop.",
+        "evidence": "app/worker/runner.py run_export"
+      },
+      "detail": "app/worker/runner.py"
+    },
+    {
+      "id": "fn-run-once",
+      "name": "run_once",
+      "level": "unit",
+      "parent": "runner-file",
+      "kind": "function",
+      "about": {
+        "what": "Claims the next queued export and runs it.",
+        "evidence": "app/worker/runner.py run_once"
+      }
+    },
+    {
+      "id": "fn-run",
+      "name": "run_export",
+      "level": "unit",
+      "parent": "runner-file",
+      "kind": "function",
+      "about": {
+        "what": "Uploads parts, checking for a stop request before each one.",
+        "evidence": "app/worker/runner.py run_export"
+      }
+    },
+    {
+      "id": "wk-data",
+      "name": "Data access",
+      "level": "component",
+      "parent": "worker",
+      "kind": "component",
+      "about": {
+        "what": "The worker’s copy of the same repository class.",
+        "evidence": "app/db/exports_repo.py ExportRepository"
+      }
+    },
+    {
+      "id": "wk-repo-file",
+      "name": "exports_repo.py",
+      "level": "file",
+      "parent": "wk-data",
+      "kind": "file",
+      "about": {
+        "what": "PostgreSQL access to exports, imported by the worker.",
+        "evidence": "app/db/exports_repo.py ExportRepository"
+      },
+      "detail": "app/db/exports_repo.py"
+    },
+    {
+      "id": "fn-claim",
+      "name": "claim_next",
+      "level": "unit",
+      "parent": "wk-repo-file",
+      "kind": "method",
+      "about": {
+        "what": "Claims the oldest queued export with SKIP LOCKED.",
+        "evidence": "app/db/exports_repo.py ExportRepository.claim_next"
+      },
+      "detail": "ExportRepository.claim_next"
+    },
+    {
+      "id": "fn-stop-req",
+      "name": "stop_requested",
+      "level": "unit",
+      "parent": "wk-repo-file",
+      "kind": "method",
+      "about": {
+        "what": "Reads stop_requested_at.",
+        "evidence": "app/db/exports_repo.py ExportRepository.stop_requested"
+      },
+      "detail": "ExportRepository.stop_requested"
+    },
+    {
+      "id": "fn-finish",
+      "name": "finish",
+      "level": "unit",
+      "parent": "wk-repo-file",
+      "kind": "method",
+      "about": {
+        "what": "Ends a running export; matches nothing if it is no longer running.",
+        "evidence": "app/db/exports_repo.py ExportRepository.finish"
+      },
+      "detail": "ExportRepository.finish"
+    },
+    {
+      "id": "db",
+      "name": "PostgreSQL",
+      "level": "process",
+      "parent": "host-servers",
+      "kind": "database",
+      "about": {
+        "what": "The service database.",
+        "evidence": "db/schema.sql exports.export_job"
+      }
+    },
+    {
+      "id": "schema-exports",
+      "name": "exports schema",
+      "level": "component",
+      "parent": "db",
+      "kind": "schema",
+      "about": {
+        "what": "Export rows and their event log.",
+        "evidence": "db/schema.sql SCHEMA"
+      }
+    },
+    {
+      "id": "tbl-job",
+      "name": "export_job",
+      "level": "unit",
+      "parent": "schema-exports",
+      "kind": "table",
+      "about": {
+        "what": "One row per export; its state is the lifecycle below.",
+        "evidence": "db/schema.sql exports.export_job"
+      },
+      "detail": "exports.export_job"
+    },
+    {
+      "id": "trg-event",
+      "name": "record_export_event",
+      "level": "unit",
+      "parent": "schema-exports",
+      "kind": "trigger",
+      "about": {
+        "what": "AFTER UPDATE trigger function on export_job.",
+        "evidence": "db/schema.sql exports.record_export_event"
+      },
+      "detail": "exports.record_export_event"
+    },
+    {
+      "id": "tbl-event",
+      "name": "export_event",
+      "level": "unit",
+      "parent": "schema-exports",
+      "kind": "table",
+      "about": {
+        "what": "Append-only log of state changes.",
+        "evidence": "db/schema.sql exports.export_event"
+      },
+      "detail": "exports.export_event"
+    },
+    {
+      "id": "host-cloud",
+      "name": "Storage provider",
+      "level": "host",
+      "parent": null,
+      "kind": "external",
+      "about": {
+        "what": "A third-party object store. Its internals are outside this code.",
+        "evidence": "app/worker/runner.py storage"
+      }
+    },
+    {
+      "id": "storage",
+      "name": "Object storage",
+      "level": "process",
+      "parent": "host-cloud",
+      "kind": "external",
+      "about": {
+        "what": "Multipart uploads. Opaque: only the calls are traced.",
+        "evidence": "app/worker/runner.py upload_part"
+      }
+    }
+  ],
+  "boundaries": {
+    "call": {
+      "label": "In-process function call"
+    },
+    "http": {
+      "badge": "HTTP",
+      "label": "HTTP request or response"
+    },
+    "database-call": {
+      "badge": "SQL",
+      "label": "Application statement to the database"
+    },
+    "database-trigger": {
+      "badge": "TRG",
+      "label": "Trigger effect",
+      "internal": true
+    },
+    "transaction": {
+      "badge": "TX",
+      "label": "Transaction boundary"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "cancel-queued",
+      "label": "Cancel while queued",
+      "summary": "One transaction ends the export cancelled · not_started.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+    },
+    {
+      "id": "cancel-running",
+      "label": "Cancel while running",
+      "summary": "The API records a stop request; the worker aborts the upload and ends the export cancelled · stopped.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel; app/worker/runner.py run_export"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "i-claim",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Claim",
+      "from": "fn-run-once",
+      "to": "fn-claim",
+      "title": "Claim the next export",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "The worker asks for the oldest queued export.",
+      "evidence": "app/worker/runner.py run_once",
+      "example": "repo.claim_next(\"worker-7\")"
+    },
+    {
+      "id": "i-claim-sql",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Claim",
+      "from": "fn-claim",
+      "to": "tbl-job",
+      "title": "UPDATE … SKIP LOCKED",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "One statement claims a row no other worker holds.",
+      "evidence": "app/db/exports_repo.py ExportRepository.claim_next",
+      "mechanism": "UPDATE exports.export_job SET state = 'running', worker_id = $1 WHERE id = (SELECT … FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *",
+      "transition": "t-claim",
+      "checkpoint": "cp-running",
+      "fields": [
+        [
+          "worker_id",
+          "text",
+          "The claiming worker. Nothing reads it back to detect a dead worker."
+        ]
+      ]
+    },
+    {
+      "id": "i-claim-trg",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Claim",
+      "from": "tbl-job",
+      "to": "trg-event",
+      "title": "Trigger fires",
+      "delivery": "delivered",
+      "boundary": "database-trigger",
+      "summary": "AFTER UPDATE runs record_export_event.",
+      "evidence": "db/schema.sql export_job_event"
+    },
+    {
+      "id": "i-claim-evt",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Claim",
+      "from": "trg-event",
+      "to": "tbl-event",
+      "title": "INSERT queued → running",
+      "delivery": "delivered",
+      "boundary": "database-trigger",
+      "summary": "One event row per state change.",
+      "evidence": "db/schema.sql exports.record_export_event"
+    },
+    {
+      "id": "i-run",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Claim",
+      "from": "fn-run-once",
+      "to": "fn-run",
+      "title": "Run the export",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Hands the claimed row to the upload loop.",
+      "evidence": "app/worker/runner.py run_once"
+    },
+    {
+      "id": "i-part",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Upload",
+      "from": "fn-run",
+      "to": "storage",
+      "title": "Upload a part",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "Starts the multipart upload and sends the first part.",
+      "evidence": "app/worker/runner.py upload_part",
+      "mechanism": "start_upload, then upload_part(upload, part)",
+      "example": "(synthetic) PUT /bucket/exports/<export id>?partNumber=1&uploadId=<upload id>"
+    },
+    {
+      "id": "i-click",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Ask",
+      "from": "fn-js-cancel",
+      "to": "fn-route",
+      "title": "POST cancel",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "No body; the export id is in the path.",
+      "evidence": "web/exports.js cancelExport",
+      "mechanism": "POST /exports/{export_id}/cancel",
+      "example": "POST /exports/<export uuid>/cancel"
+    },
+    {
+      "id": "i-service",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Check",
+      "from": "fn-route",
+      "to": "fn-svc-cancel",
+      "title": "Cancel in the service",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "The route passes the export id and the signed-in user.",
+      "evidence": "app/api/routes.py cancel_export"
+    },
+    {
+      "id": "i-owner",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Check",
+      "from": "fn-svc-cancel",
+      "to": "fn-owner",
+      "title": "Require the owner",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Another user’s export raises NotFound, which the route turns into 404.",
+      "evidence": "app/services/exports.py ExportService._require_owner"
+    },
+    {
+      "id": "i-owner-call",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Check",
+      "from": "fn-owner",
+      "to": "fn-repo-owner",
+      "title": "Read the owner",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "The service asks the repository; it never queries itself.",
+      "evidence": "app/services/exports.py ExportService._require_owner; app/db/exports_repo.py ExportRepository.owner_of"
+    },
+    {
+      "id": "i-owner-sql",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Check",
+      "from": "fn-repo-owner",
+      "to": "tbl-job",
+      "title": "SELECT owner_id",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Its own connection, outside the cancel transaction.",
+      "evidence": "app/db/exports_repo.py ExportRepository.owner_of",
+      "mechanism": "SELECT owner_id FROM exports.export_job WHERE id = $1"
+    },
+    {
+      "id": "i-repo",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Check",
+      "from": "fn-svc-cancel",
+      "to": "fn-repo-cancel",
+      "title": "Ask the repository to cancel",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Only after the ownership check passed.",
+      "evidence": "app/services/exports.py ExportService.cancel"
+    },
+    {
+      "id": "i-lock",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Cancel",
+      "from": "fn-repo-cancel",
+      "to": "tbl-job",
+      "title": "BEGIN; lock the row",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "The claim and the worker’s finish wait on this lock.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+      "mechanism": "SELECT * FROM exports.export_job WHERE id = $1 FOR UPDATE",
+      "transaction": "tx-cancel"
+    },
+    {
+      "id": "i-end-queued",
+      "scenarios": [
+        "cancel-queued"
+      ],
+      "phase": "Cancel",
+      "from": "fn-repo-cancel",
+      "to": "tbl-job",
+      "title": "End it cancelled",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Queued: nothing has started, so it ends at once.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+      "mechanism": "UPDATE exports.export_job SET state = 'cancelled', cancel_reason = 'not_started', finished_at = now()",
+      "transition": "t-cancel-queued",
+      "checkpoint": "cp-not-started",
+      "transaction": "tx-cancel"
+    },
+    {
+      "id": "i-request-stop",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Cancel",
+      "from": "fn-repo-cancel",
+      "to": "tbl-job",
+      "title": "Record a stop request",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Running: the worker owns the upload, so the API only asks it to stop.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+      "mechanism": "UPDATE exports.export_job SET stop_requested_at = coalesce(stop_requested_at, now())",
+      "transition": "t-request-stop",
+      "checkpoint": "cp-stopping",
+      "transaction": "tx-cancel",
+      "rules": "coalesce keeps the first request time, so a second Cancel changes nothing."
+    },
+    {
+      "id": "i-trg",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Cancel",
+      "from": "tbl-job",
+      "to": "trg-event",
+      "title": "Trigger fires",
+      "delivery": "delivered",
+      "boundary": "database-trigger",
+      "summary": "Runs inside the cancel transaction.",
+      "evidence": "db/schema.sql export_job_event",
+      "transaction": "tx-cancel"
+    },
+    {
+      "id": "i-evt",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Cancel",
+      "from": "trg-event",
+      "to": "tbl-event",
+      "title": "INSERT the event",
+      "delivery": "delivered",
+      "boundary": "database-trigger",
+      "summary": "Commits or rolls back with the update.",
+      "evidence": "db/schema.sql exports.record_export_event",
+      "transaction": "tx-cancel"
+    },
+    {
+      "id": "i-commit",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "phase": "Cancel",
+      "from": "fn-repo-cancel",
+      "to": "tbl-job",
+      "title": "COMMIT",
+      "delivery": "delivered",
+      "boundary": "transaction",
+      "summary": "Leaving conn.transaction() commits.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+      "transaction": "tx-cancel"
+    },
+    {
+      "id": "i-reply-queued",
+      "scenarios": [
+        "cancel-queued"
+      ],
+      "phase": "Show",
+      "from": "fn-route",
+      "to": "fn-js-cancel",
+      "title": "200 cancelled",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The page shows the export cancelled.",
+      "evidence": "app/api/routes.py cancel_export",
+      "example": "{ \"id\": \"<export uuid>\", \"state\": \"cancelled\", \"stop_requested\": false }"
+    },
+    {
+      "id": "i-reply-running",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Show",
+      "from": "fn-route",
+      "to": "fn-js-cancel",
+      "title": "202 stopping",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The page shows Stopping…; the export is still running.",
+      "evidence": "app/api/routes.py cancel_export",
+      "example": "{ \"id\": \"<export uuid>\", \"state\": \"running\", \"stop_requested\": true }"
+    },
+    {
+      "id": "i-check-stop",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "fn-run",
+      "to": "fn-stop-req",
+      "title": "Stop requested?",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Checked before each part, never during one.",
+      "evidence": "app/worker/runner.py run_export"
+    },
+    {
+      "id": "i-check-sql",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "fn-stop-req",
+      "to": "tbl-job",
+      "title": "SELECT stop_requested_at",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Sees the committed stop request.",
+      "evidence": "app/db/exports_repo.py ExportRepository.stop_requested",
+      "mechanism": "SELECT stop_requested_at FROM exports.export_job WHERE id = $1"
+    },
+    {
+      "id": "i-abort",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "fn-run",
+      "to": "storage",
+      "title": "Abort the upload",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "Discards the parts already sent. A failed abort raises, and the export stays stopping.",
+      "evidence": "app/worker/runner.py abort_upload"
+    },
+    {
+      "id": "i-finish",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "fn-run",
+      "to": "fn-finish",
+      "title": "Finish as cancelled",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "cancel_reason stopped.",
+      "evidence": "app/worker/runner.py run_export",
+      "example": "repo.finish(id, \"cancelled\", cancel_reason=\"stopped\")"
+    },
+    {
+      "id": "i-finish-sql",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "fn-finish",
+      "to": "tbl-job",
+      "title": "UPDATE … WHERE state = 'running'",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Ends the row only if it is still running.",
+      "evidence": "app/db/exports_repo.py ExportRepository.finish",
+      "mechanism": "UPDATE exports.export_job SET state = $1, cancel_reason = $2, finished_at = now() WHERE id = $3 AND state = 'running'",
+      "transition": "t-stop",
+      "checkpoint": "cp-stopped"
+    },
+    {
+      "id": "i-finish-trg",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "tbl-job",
+      "to": "trg-event",
+      "title": "Trigger fires",
+      "delivery": "delivered",
+      "boundary": "database-trigger",
+      "summary": "AFTER UPDATE runs record_export_event.",
+      "evidence": "db/schema.sql export_job_event"
+    },
+    {
+      "id": "i-finish-evt",
+      "scenarios": [
+        "cancel-running"
+      ],
+      "phase": "Stop",
+      "from": "trg-event",
+      "to": "tbl-event",
+      "title": "INSERT running → cancelled",
+      "delivery": "delivered",
+      "boundary": "database-trigger",
+      "summary": "The last event for this export.",
+      "evidence": "db/schema.sql exports.record_export_event"
+    }
+  ],
+  "checkpoints": {
+    "cp-running": {
+      "owner": "tbl-job",
+      "previous": "queued",
+      "next": "running",
+      "meaning": "running · worker_id set.",
+      "evidence": "app/db/exports_repo.py ExportRepository.claim_next"
+    },
+    "cp-not-started": {
+      "owner": "tbl-job",
+      "previous": "queued",
+      "next": "cancelled",
+      "meaning": "cancelled · not_started; finished_at set.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+    },
+    "cp-stopping": {
+      "owner": "tbl-job",
+      "previous": "running",
+      "next": "running + stop",
+      "meaning": "Still running; stop_requested_at set.",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+    },
+    "cp-stopped": {
+      "owner": "tbl-job",
+      "previous": "running + stop",
+      "next": "cancelled",
+      "meaning": "cancelled · stopped; finished_at set.",
+      "evidence": "app/db/exports_repo.py ExportRepository.finish"
+    }
+  },
+  "conditions": [
+    {
+      "id": "c-not-owner",
+      "label": "Not the person’s export",
+      "scenarios": [
+        "cancel-queued",
+        "cancel-running"
+      ],
+      "interactions": [
+        "i-owner"
+      ],
+      "when": "owner_of returns another user’s id, or nothing.",
+      "impact": "404. Nothing changes and the id leaks nothing.",
+      "detection": "_require_owner raises NotFound.",
+      "recovery": "None needed.",
+      "tests": "tests/test_cancel.py test_cancel_other_users_export_is_not_found",
+      "confidence": "code-confirmed"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-cancel",
+      "name": "Cancel transaction",
+      "start": "i-lock",
+      "end": "i-commit",
+      "span": "db",
+      "owner": "fn-repo-cancel",
+      "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+      "guarantee": "The lock, the state change and its event row commit together."
+    }
+  ],
+  "lifecycle": {
+    "machine": {
+      "title": "Export",
+      "subject": "exports.export_job",
+      "writers": {
+        "api": {
+          "name": "API",
+          "glyph": "A",
+          "role": "API process",
+          "about": "Ends a queued export or records a stop request, under the row lock.",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+        },
+        "worker": {
+          "name": "Worker",
+          "glyph": "W",
+          "role": "Export worker",
+          "about": "Claims queued exports and ends the ones it claimed.",
+          "evidence": "app/db/exports_repo.py ExportRepository.claim_next; app/db/exports_repo.py ExportRepository.finish"
+        }
+      },
+      "coverage": {
+        "deployed": "Traced, and reachable in the running service.",
+        "substitute": "Traced, but only with a test substitute.",
+        "untraced": "Allowed by the source; not traced here."
+      },
+      "coverageLegend": {
+        "deployed": "traced · deployed",
+        "substitute": "traced · test only",
+        "untraced": "not traced"
+      },
+      "nodes": [
+        {
+          "id": "request",
+          "kind": "start",
+          "label": "Export requested"
+        },
+        {
+          "id": "queued",
+          "kind": "state",
+          "label": "queued",
+          "fact": "no worker"
+        },
+        {
+          "id": "running",
+          "kind": "state",
+          "label": "running",
+          "fact": "worker_id set",
+          "chips": [
+            "⇡"
+          ]
+        },
+        {
+          "id": "stopping",
+          "kind": "state",
+          "label": "running + stop",
+          "fact": "stop_requested_at set",
+          "chips": [
+            "⇡",
+            "■"
+          ]
+        },
+        {
+          "id": "x-succeeded",
+          "kind": "ending",
+          "label": "succeeded",
+          "tone": "success",
+          "reason": "completed",
+          "consequence": "file ready"
+        },
+        {
+          "id": "x-not-started",
+          "kind": "ending",
+          "label": "cancelled",
+          "tone": "cancelled",
+          "reason": "not_started",
+          "consequence": "nothing made",
+          "checkpoint": "cp-not-started"
+        },
+        {
+          "id": "x-stopped",
+          "kind": "ending",
+          "label": "cancelled",
+          "tone": "cancelled",
+          "reason": "stopped",
+          "consequence": "partial upload discarded",
+          "checkpoint": "cp-stopped"
+        },
+        {
+          "id": "failed",
+          "kind": "ghost",
+          "label": "failed",
+          "fact": "allowed, never written"
+        }
+      ],
+      "chips": {
+        "⇡": "A multipart upload is open at the storage provider.",
+        "■": "A stop request waits for the worker’s next check."
+      },
+      "chipKinds": {
+        "⇡": "external",
+        "■": "internal"
+      },
+      "chipEvidence": "app/worker/runner.py run_export",
+      "states": {
+        "queued": {
+          "meaning": "Requested; no worker has claimed it.",
+          "facts": "worker_id null · started_at null",
+          "owes": "Nothing.",
+          "evidence": "db/schema.sql exports.export_job"
+        },
+        "running": {
+          "meaning": "A worker claimed it and is uploading parts.",
+          "facts": "worker_id set · started_at set",
+          "owes": "An open multipart upload at the provider.",
+          "evidence": "app/db/exports_repo.py ExportRepository.claim_next"
+        },
+        "stopping": {
+          "meaning": "Still running; the person pressed Cancel and the worker has not checked yet.",
+          "facts": "state running · stop_requested_at set",
+          "owes": "The open upload, and a stop the worker must honour.",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+        },
+        "failed": {
+          "meaning": "The CHECK constraint allows it; no code writes or reads it. See F1.",
+          "facts": "—",
+          "owes": "—",
+          "evidence": "db/schema.sql exports.export_job"
+        }
+      },
+      "transitions": [
+        {
+          "id": "t-create",
+          "from": [
+            "request"
+          ],
+          "to": "queued",
+          "writer": "api",
+          "label": "create",
+          "guard": "An export request inserted the row. Not part of this example’s code.",
+          "effect": "INSERT export_job; state defaults to queued.",
+          "evidence": "db/schema.sql exports.export_job",
+          "reach": "untraced"
+        },
+        {
+          "id": "t-claim",
+          "from": [
+            "queued"
+          ],
+          "to": "running",
+          "writer": "worker",
+          "label": "claim",
+          "guard": "Oldest queued row not locked by another worker.",
+          "effect": "state running, worker_id, started_at.",
+          "evidence": "app/db/exports_repo.py ExportRepository.claim_next",
+          "reach": "deployed"
+        },
+        {
+          "id": "t-cancel-queued",
+          "from": [
+            "queued"
+          ],
+          "to": "x-not-started",
+          "writer": "api",
+          "label": "cancel",
+          "guard": "Owner; state queued under the row lock.",
+          "effect": "cancelled · not_started.",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+          "reach": "deployed",
+          "tests": "tests/test_cancel.py test_cancel_queued_export_ends_it"
+        },
+        {
+          "id": "t-request-stop",
+          "from": [
+            "running"
+          ],
+          "to": "stopping",
+          "writer": "api",
+          "label": "cancel",
+          "guard": "Owner; state running under the row lock.",
+          "effect": "stop_requested_at = coalesce(stop_requested_at, now()).",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+          "reach": "deployed",
+          "tests": "tests/test_cancel.py test_cancel_running_export_requests_stop"
+        },
+        {
+          "id": "t-stop",
+          "from": [
+            "stopping"
+          ],
+          "to": "x-stopped",
+          "writer": "worker",
+          "label": "stop",
+          "guard": "stop_requested before the next part; abort_upload succeeded.",
+          "effect": "cancelled · stopped, only WHERE state = 'running'.",
+          "evidence": "app/worker/runner.py run_export; app/db/exports_repo.py ExportRepository.finish",
+          "reach": "deployed"
+        },
+        {
+          "id": "t-succeed",
+          "from": [
+            "running",
+            "stopping"
+          ],
+          "to": "x-succeeded",
+          "writer": "worker",
+          "label": "succeed",
+          "guard": "Every part uploaded; no stop seen at the last check.",
+          "effect": "succeeded, only WHERE state = 'running'.",
+          "evidence": "app/worker/runner.py run_export; app/db/exports_repo.py ExportRepository.finish",
+          "reach": "deployed"
+        }
+      ]
+    },
+    "endings": {
+      "x-succeeded": {
+        "title": "succeeded",
+        "record": "succeeded; finished_at set.",
+        "cost": "The full render.",
+        "result": "The file is in storage.",
+        "external": "Upload complete.",
+        "seen": "Ready to download.",
+        "owed": "Nothing.",
+        "evidence": "app/worker/runner.py run_export"
+      },
+      "x-not-started": {
+        "title": "cancelled · not_started",
+        "record": "cancelled · not_started; finished_at set.",
+        "cost": "Nothing was rendered.",
+        "result": "No file.",
+        "external": "Nothing was sent.",
+        "seen": "Cancelled.",
+        "owed": "Nothing.",
+        "evidence": "app/db/exports_repo.py ExportRepository.cancel"
+      },
+      "x-stopped": {
+        "title": "cancelled · stopped",
+        "record": "cancelled · stopped; finished_at set.",
+        "cost": "The parts rendered before the stop.",
+        "result": "No file.",
+        "external": "Multipart upload aborted.",
+        "seen": "Stopping…, then Cancelled.",
+        "owed": "Nothing once abort_upload succeeded. A failed abort raises before finish, so the row stays running + stop (F1).",
+        "evidence": "app/worker/runner.py abort_upload"
+      }
+    },
+    "paths": [
+      {
+        "id": "p-cancel-queued",
+        "label": "Cancel while queued",
+        "end": "x-not-started",
+        "scenario": "cancel-queued",
+        "transitions": [
+          "t-create",
+          "t-cancel-queued"
+        ]
+      },
+      {
+        "id": "p-cancel-running",
+        "label": "Cancel while running",
+        "end": "x-stopped",
+        "scenario": "cancel-running",
+        "transitions": [
+          "t-create",
+          "t-claim",
+          "t-request-stop",
+          "t-stop"
+        ]
+      },
+      {
+        "id": "p-succeed",
+        "label": "Export succeeds",
+        "end": "x-succeeded",
+        "scenario": null,
+        "transitions": [
+          "t-create",
+          "t-claim",
+          "t-succeed"
+        ]
+      },
+      {
+        "id": "p-late-cancel",
+        "label": "Cancel after the last check",
+        "end": "x-succeeded",
+        "scenario": null,
+        "transitions": [
+          "t-create",
+          "t-claim",
+          "t-request-stop",
+          "t-succeed"
+        ],
+        "note": "The stop request lands after the final part’s check. See F2."
+      },
+      {
+        "id": "p-worker-lost",
+        "label": "Worker dies or raises",
+        "end": "running",
+        "scenario": null,
+        "transitions": [
+          "t-create",
+          "t-claim"
+        ],
+        "note": "Nothing moves the row again. See F1."
+      }
+    ],
+    "collisions": {
+      "rows": [
+        {
+          "id": "r-queued",
+          "label": "queued",
+          "fact": "no worker",
+          "state": "queued"
+        },
+        {
+          "id": "r-running",
+          "label": "running",
+          "fact": "upload open",
+          "state": "running"
+        },
+        {
+          "id": "r-stopping",
+          "label": "running + stop",
+          "fact": "stop requested",
+          "state": "stopping"
+        }
+      ],
+      "cols": [
+        {
+          "id": "c-cancel",
+          "label": "Cancel pressed"
+        },
+        {
+          "id": "c-lost",
+          "label": "Worker dies or raises"
+        },
+        {
+          "id": "c-last",
+          "label": "Last part uploads"
+        }
+      ],
+      "cells": [
+        {
+          "row": "r-queued",
+          "col": "c-cancel",
+          "short": "Ends cancelled",
+          "end": "x-not-started",
+          "transitions": [
+            "t-cancel-queued"
+          ],
+          "detail": "Under the row lock; a second Cancel finds it cancelled and returns it unchanged.",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-queued",
+          "col": "c-lost",
+          "short": "Cannot occur",
+          "end": null,
+          "transitions": [],
+          "detail": "No worker owns a queued export; another worker claims it.",
+          "evidence": "app/db/exports_repo.py ExportRepository.claim_next",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-queued",
+          "col": "c-last",
+          "short": "Cannot occur",
+          "end": null,
+          "transitions": [],
+          "detail": "Nothing is uploading yet.",
+          "evidence": "app/worker/runner.py run_export",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-running",
+          "col": "c-cancel",
+          "short": "Stop requested",
+          "end": "stopping",
+          "transitions": [
+            "t-request-stop"
+          ],
+          "detail": "The API records the request; the worker sees it before the next part.",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-running",
+          "col": "c-lost",
+          "short": "Stuck running",
+          "end": "running",
+          "transitions": [],
+          "detail": "No lease or sweeper. The row stays running forever. F1.",
+          "evidence": "app/worker/runner.py run_export",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-running",
+          "col": "c-last",
+          "short": "Succeeds",
+          "end": "x-succeeded",
+          "transitions": [
+            "t-succeed"
+          ],
+          "detail": "complete_upload, then finish succeeded.",
+          "evidence": "app/worker/runner.py run_export",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-stopping",
+          "col": "c-cancel",
+          "short": "Same 202",
+          "end": "stopping",
+          "transitions": [],
+          "detail": "coalesce keeps the first request time; the reply is 202 again.",
+          "evidence": "app/db/exports_repo.py ExportRepository.cancel",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-stopping",
+          "col": "c-lost",
+          "short": "Stop never honoured",
+          "end": "stopping",
+          "transitions": [],
+          "detail": "The person saw Stopping…; nothing ends the row. F1.",
+          "evidence": "app/worker/runner.py run_export",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-stopping",
+          "col": "c-last",
+          "short": "Succeeds anyway",
+          "end": "x-succeeded",
+          "transitions": [
+            "t-succeed"
+          ],
+          "detail": "The request landed after the last check; finish matches state running and writes succeeded. F2.",
+          "evidence": "app/worker/runner.py run_export; app/db/exports_repo.py ExportRepository.finish",
+          "confidence": "code-confirmed"
+        }
+      ]
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "label": "An error or a lost worker leaves the export running forever",
+        "rank": "P2",
+        "kind": "Confirmed gap",
+        "detail": "run_export has no exception handling and nothing reclaims a claimed row. failed is allowed by the CHECK constraint and never written.",
+        "evidence": "app/worker/runner.py run_export; db/schema.sql exports.export_job",
+        "invariant": "Every claimed export ends: succeeded, failed or cancelled.",
+        "impact": "The export shows running, or Stopping…, with no way out. The open upload is never aborted.",
+        "reproduction": "Claim an export, then make render_parts raise or kill the worker. The row keeps state running.",
+        "owner": "The worker’s claim: it needs a lease the database can expire.",
+        "repair": "Proposal: give the claim a lease_expires_at that the worker renews per part; a sweeper ends expired rows failed and aborts their uploads. Catch render errors and finish failed.",
+        "closure": "A test that kills the worker after the claim and asserts the sweeper ends the row failed and aborts the upload.",
+        "nodes": [
+          "running",
+          "stopping",
+          "failed"
+        ],
+        "transitions": [
+          "t-claim"
+        ],
+        "participants": [
+          "fn-run",
+          "fn-finish",
+          "tbl-job"
+        ],
+        "collisions": [
+          {
+            "row": "r-running",
+            "col": "c-lost"
+          },
+          {
+            "row": "r-stopping",
+            "col": "c-lost"
+          }
+        ],
+        "path": "p-worker-lost",
+        "steps": [
+          {
+            "mark": "holds",
+            "transition": "t-claim",
+            "text": "claim_next marks the export running with this worker’s id."
+          },
+          {
+            "mark": "breaks",
+            "text": "render_parts raises, or the worker process dies; run_export never reaches finish."
+          },
+          {
+            "mark": "missing",
+            "text": "No lease, heartbeat or sweeper moves a running export to failed."
+          }
+        ]
+      },
+      {
+        "id": "F2",
+        "label": "A late cancel is acknowledged, then the export succeeds",
+        "rank": "P3",
+        "kind": "Copy and expectation",
+        "detail": "The API answers 202 Stopping…, but a stop request after the last check is ignored and the export succeeds.",
+        "evidence": "app/api/routes.py cancel_export; app/worker/runner.py run_export",
+        "invariant": "What the page says after Cancel matches how the export can still end.",
+        "impact": "The person sees Stopping…, then Ready. Nothing is lost, but the reply promised a stop.",
+        "reproduction": "Press Cancel while the last part is uploading.",
+        "owner": "The cancel route’s reply and the page copy.",
+        "repair": "Proposal: word the 202 as ‘Stop requested; an export that is almost done may still finish’.",
+        "closure": "A test that requests a stop after the last check and asserts the page copy for succeeded-after-stop.",
+        "transitions": [
+          "t-request-stop",
+          "t-succeed"
+        ],
+        "collisions": [
+          {
+            "row": "r-stopping",
+            "col": "c-last"
+          }
+        ],
+        "path": "p-late-cancel",
+        "steps": [
+          {
+            "mark": "holds",
+            "transition": "t-request-stop",
+            "text": "The cancel commits stop_requested_at and replies 202."
+          },
+          {
+            "mark": "breaks",
+            "transition": "t-succeed",
+            "text": "The worker already passed its last check; finish writes succeeded."
+          }
+        ]
+      }
+    ]
+  }
+}
