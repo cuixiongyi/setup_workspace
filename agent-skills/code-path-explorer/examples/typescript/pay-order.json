@@ -1,0 +1,1463 @@
+{
+  "$schema": "../../scripts/journey.schema.json",
+  "format": "journey-explorer/2",
+  "title": "Pay for an order · TypeScript example",
+  "lead": "A customer pays for an order. The server starts a payment intent, the browser confirms the card with the provider, and a signed webhook marks the order paid. A scheduled job expires orders nobody paid for. Opens at `Component / schema`.",
+  "note": "A self-contained example: the cited files are under examples/typescript. Build with --root examples/typescript. Payloads are synthetic.",
+  "export": "pay-order.json",
+  "outside": [
+    "Building the cart, shipping, and the provider’s own retries and intent expiry."
+  ],
+  "levels": [
+    {
+      "id": "host",
+      "label": "Host"
+    },
+    {
+      "id": "process",
+      "label": "Process"
+    },
+    {
+      "id": "component",
+      "label": "Component / schema"
+    },
+    {
+      "id": "file",
+      "label": "File"
+    },
+    {
+      "id": "unit",
+      "label": "Function / table"
+    }
+  ],
+  "defaultLevel": "component",
+  "participants": [
+    {
+      "id": "host-device",
+      "name": "Customer’s device",
+      "level": "host",
+      "parent": null,
+      "kind": "device",
+      "about": {
+        "what": "The customer’s browser.",
+        "evidence": "web/src/checkout.ts payOrder",
+        "where": "Any browser."
+      }
+    },
+    {
+      "id": "browser",
+      "name": "Browser",
+      "level": "process",
+      "parent": "host-device",
+      "kind": "client",
+      "about": {
+        "what": "The shop’s web client and the provider’s card script.",
+        "evidence": "web/src/checkout.ts payOrder"
+      }
+    },
+    {
+      "id": "web-checkout",
+      "name": "Checkout page",
+      "level": "component",
+      "parent": "browser",
+      "kind": "component",
+      "about": {
+        "what": "Starts the payment and confirms the card.",
+        "evidence": "web/src/checkout.ts payOrder"
+      }
+    },
+    {
+      "id": "checkout-file",
+      "name": "checkout.ts",
+      "level": "file",
+      "parent": "web-checkout",
+      "kind": "file",
+      "about": {
+        "what": "Checkout page code.",
+        "evidence": "web/src/checkout.ts payOrder"
+      },
+      "detail": "web/src/checkout.ts"
+    },
+    {
+      "id": "fn-pay-order",
+      "name": "payOrder",
+      "level": "unit",
+      "parent": "checkout-file",
+      "kind": "function",
+      "about": {
+        "what": "Asks the server for a client secret, then confirms the card with the provider.",
+        "evidence": "web/src/checkout.ts payOrder"
+      }
+    },
+    {
+      "id": "host-servers",
+      "name": "Shop servers",
+      "level": "host",
+      "parent": null,
+      "kind": "host",
+      "about": {
+        "what": "The API server, the scheduled jobs and PostgreSQL.",
+        "evidence": "server/src/routes/orders.ts ordersRouter; server/src/jobs/expire.ts expireStaleOrders"
+      }
+    },
+    {
+      "id": "api",
+      "name": "API server",
+      "level": "process",
+      "parent": "host-servers",
+      "kind": "process",
+      "about": {
+        "what": "The Express application.",
+        "evidence": "server/src/routes/orders.ts ordersRouter",
+        "does": "Starts payments for signed-in customers; accepts signed provider events."
+      }
+    },
+    {
+      "id": "api-http",
+      "name": "HTTP routes",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "Request parsing and status codes.",
+        "evidence": "server/src/routes/orders.ts payOrderRoute; server/src/routes/webhooks.ts paymentWebhook"
+      }
+    },
+    {
+      "id": "orders-file",
+      "name": "orders.ts",
+      "level": "file",
+      "parent": "api-http",
+      "kind": "file",
+      "about": {
+        "what": "Order routes.",
+        "evidence": "server/src/routes/orders.ts ordersRouter"
+      },
+      "detail": "server/src/routes/orders.ts"
+    },
+    {
+      "id": "fn-pay-route",
+      "name": "POST /orders/:id/pay",
+      "level": "unit",
+      "parent": "orders-file",
+      "kind": "route",
+      "about": {
+        "what": "200 with a client secret, or 409 when the order is not a cart.",
+        "evidence": "server/src/routes/orders.ts payOrderRoute"
+      },
+      "detail": "payOrderRoute"
+    },
+    {
+      "id": "hooks-file",
+      "name": "webhooks.ts",
+      "level": "file",
+      "parent": "api-http",
+      "kind": "file",
+      "about": {
+        "what": "Provider webhook route.",
+        "evidence": "server/src/routes/webhooks.ts webhooksRouter"
+      },
+      "detail": "server/src/routes/webhooks.ts"
+    },
+    {
+      "id": "fn-webhook",
+      "name": "POST /webhooks/payments",
+      "level": "unit",
+      "parent": "hooks-file",
+      "kind": "route",
+      "about": {
+        "what": "Verifies the signature, applies a succeeded event, and answers 200 to every verified event.",
+        "evidence": "server/src/routes/webhooks.ts paymentWebhook"
+      },
+      "detail": "paymentWebhook"
+    },
+    {
+      "id": "api-service",
+      "name": "Order service",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "Order use cases. Owns the order of commits and provider calls.",
+        "evidence": "server/src/orders/service.ts startPayment"
+      }
+    },
+    {
+      "id": "service-file",
+      "name": "service.ts",
+      "level": "file",
+      "parent": "api-service",
+      "kind": "file",
+      "about": {
+        "what": "Order service.",
+        "evidence": "server/src/orders/service.ts startPayment"
+      },
+      "detail": "server/src/orders/service.ts"
+    },
+    {
+      "id": "fn-start",
+      "name": "startPayment",
+      "level": "unit",
+      "parent": "service-file",
+      "kind": "function",
+      "about": {
+        "what": "Commits awaiting_payment, then creates the payment intent outside the transaction.",
+        "evidence": "server/src/orders/service.ts startPayment"
+      }
+    },
+    {
+      "id": "fn-mark",
+      "name": "markPaid",
+      "level": "unit",
+      "parent": "service-file",
+      "kind": "function",
+      "about": {
+        "what": "Records the event id, then marks the order paid if it is still awaiting payment.",
+        "evidence": "server/src/orders/service.ts markPaid"
+      }
+    },
+    {
+      "id": "api-provider",
+      "name": "Payment client",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "The shop’s client for the provider API.",
+        "evidence": "server/src/payments/provider.ts createPaymentIntent"
+      }
+    },
+    {
+      "id": "provider-file",
+      "name": "provider.ts",
+      "level": "file",
+      "parent": "api-provider",
+      "kind": "file",
+      "about": {
+        "what": "Provider HTTP client and webhook verification.",
+        "evidence": "server/src/payments/provider.ts createPaymentIntent"
+      },
+      "detail": "server/src/payments/provider.ts"
+    },
+    {
+      "id": "fn-intent",
+      "name": "createPaymentIntent",
+      "level": "unit",
+      "parent": "provider-file",
+      "kind": "function",
+      "about": {
+        "what": "POSTs a payment intent with an idempotency key.",
+        "evidence": "server/src/payments/provider.ts createPaymentIntent"
+      }
+    },
+    {
+      "id": "fn-verify",
+      "name": "verifyWebhook",
+      "level": "unit",
+      "parent": "provider-file",
+      "kind": "function",
+      "about": {
+        "what": "HMAC check of the raw body.",
+        "evidence": "server/src/payments/provider.ts verifyWebhook"
+      }
+    },
+    {
+      "id": "api-data",
+      "name": "Data access",
+      "level": "component",
+      "parent": "api",
+      "kind": "component",
+      "about": {
+        "what": "SQL for orders and webhook events.",
+        "evidence": "server/src/db/orders-repo.ts lockCart"
+      }
+    },
+    {
+      "id": "repo-file",
+      "name": "orders-repo.ts",
+      "level": "file",
+      "parent": "api-data",
+      "kind": "file",
+      "about": {
+        "what": "Order SQL.",
+        "evidence": "server/src/db/orders-repo.ts lockCart"
+      },
+      "detail": "server/src/db/orders-repo.ts"
+    },
+    {
+      "id": "fn-lock",
+      "name": "lockCart",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "function",
+      "about": {
+        "what": "Locks the customer’s order only if it is a cart.",
+        "evidence": "server/src/db/orders-repo.ts lockCart"
+      }
+    },
+    {
+      "id": "fn-await",
+      "name": "setAwaiting",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "function",
+      "about": {
+        "what": "Moves the order to awaiting_payment.",
+        "evidence": "server/src/db/orders-repo.ts setAwaiting"
+      }
+    },
+    {
+      "id": "fn-save",
+      "name": "savePaymentId",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "function",
+      "about": {
+        "what": "Stores the provider’s payment id.",
+        "evidence": "server/src/db/orders-repo.ts savePaymentId"
+      }
+    },
+    {
+      "id": "fn-event",
+      "name": "recordEvent",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "function",
+      "about": {
+        "what": "Inserts the event id; false on a redelivery.",
+        "evidence": "server/src/db/orders-repo.ts recordEvent"
+      }
+    },
+    {
+      "id": "fn-paid",
+      "name": "markPaidIfAwaiting",
+      "level": "unit",
+      "parent": "repo-file",
+      "kind": "function",
+      "about": {
+        "what": "Marks paid only while awaiting payment and when the amount matches. Reports nothing when it matches no row.",
+        "evidence": "server/src/db/orders-repo.ts markPaidIfAwaiting"
+      }
+    },
+    {
+      "id": "jobs",
+      "name": "Scheduled jobs",
+      "level": "process",
+      "parent": "host-servers",
+      "kind": "process",
+      "about": {
+        "what": "A per-minute scheduler.",
+        "evidence": "server/src/jobs/expire.ts expireStaleOrders",
+        "does": "Expires orders left awaiting payment."
+      }
+    },
+    {
+      "id": "jobs-expiry",
+      "name": "Expiry job",
+      "level": "component",
+      "parent": "jobs",
+      "kind": "component",
+      "about": {
+        "what": "Releases stock from unpaid orders.",
+        "evidence": "server/src/jobs/expire.ts expireStaleOrders"
+      }
+    },
+    {
+      "id": "expire-file",
+      "name": "expire.ts",
+      "level": "file",
+      "parent": "jobs-expiry",
+      "kind": "file",
+      "about": {
+        "what": "The expiry job.",
+        "evidence": "server/src/jobs/expire.ts expireStaleOrders"
+      },
+      "detail": "server/src/jobs/expire.ts"
+    },
+    {
+      "id": "fn-expire",
+      "name": "expireStaleOrders",
+      "level": "unit",
+      "parent": "expire-file",
+      "kind": "function",
+      "about": {
+        "what": "Expires orders awaiting payment for over 30 minutes. Never asks the provider.",
+        "evidence": "server/src/jobs/expire.ts expireStaleOrders"
+      }
+    },
+    {
+      "id": "db",
+      "name": "PostgreSQL",
+      "level": "process",
+      "parent": "host-servers",
+      "kind": "database",
+      "about": {
+        "what": "The shop database.",
+        "evidence": "db/schema.sql shop.orders"
+      }
+    },
+    {
+      "id": "schema-shop",
+      "name": "shop schema",
+      "level": "component",
+      "parent": "db",
+      "kind": "schema",
+      "about": {
+        "what": "Orders and processed provider events.",
+        "evidence": "db/schema.sql SCHEMA"
+      }
+    },
+    {
+      "id": "tbl-orders",
+      "name": "orders",
+      "level": "unit",
+      "parent": "schema-shop",
+      "kind": "table",
+      "about": {
+        "what": "One row per order; its state is the lifecycle below.",
+        "evidence": "db/schema.sql shop.orders"
+      },
+      "detail": "shop.orders"
+    },
+    {
+      "id": "tbl-events",
+      "name": "webhook_events",
+      "level": "unit",
+      "parent": "schema-shop",
+      "kind": "table",
+      "about": {
+        "what": "Event ids already applied, for redelivery.",
+        "evidence": "db/schema.sql shop.webhook_events"
+      },
+      "detail": "shop.webhook_events"
+    },
+    {
+      "id": "host-provider",
+      "name": "Payment provider",
+      "level": "host",
+      "parent": null,
+      "kind": "external",
+      "about": {
+        "what": "A third-party payment processor. Its internals are outside this code.",
+        "evidence": "server/src/payments/provider.ts API"
+      }
+    },
+    {
+      "id": "provider",
+      "name": "Payment API",
+      "level": "process",
+      "parent": "host-provider",
+      "kind": "external",
+      "about": {
+        "what": "Payment intents, card confirmation and webhooks. Opaque: only the calls are traced.",
+        "evidence": "server/src/payments/provider.ts createPaymentIntent"
+      }
+    }
+  ],
+  "boundaries": {
+    "call": {
+      "label": "In-process function call"
+    },
+    "http": {
+      "badge": "HTTP",
+      "label": "HTTP request or response"
+    },
+    "database-call": {
+      "badge": "SQL",
+      "label": "Application statement to the database"
+    },
+    "transaction": {
+      "badge": "TX",
+      "label": "Transaction boundary"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "pay",
+      "label": "Pay",
+      "summary": "The customer confirms within 30 minutes; the webhook marks the order paid.",
+      "evidence": "server/src/orders/service.ts startPayment; server/src/orders/service.ts markPaid"
+    },
+    {
+      "id": "late",
+      "label": "Confirm after expiry",
+      "summary": "The job expires the order; the customer confirms afterwards; the event changes nothing and is acknowledged.",
+      "evidence": "server/src/jobs/expire.ts expireStaleOrders; server/src/db/orders-repo.ts markPaidIfAwaiting"
+    }
+  ],
+  "interactions": [
+    {
+      "id": "i-click",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-pay-order",
+      "to": "fn-pay-route",
+      "title": "POST pay",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "No body; the order id is in the path and the session names the customer.",
+      "evidence": "web/src/checkout.ts payOrder",
+      "mechanism": "POST /orders/:id/pay",
+      "example": "POST /orders/<order uuid>/pay"
+    },
+    {
+      "id": "i-start",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-pay-route",
+      "to": "fn-start",
+      "title": "Start the payment",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Route passes the order id and the user id.",
+      "evidence": "server/src/routes/orders.ts payOrderRoute"
+    },
+    {
+      "id": "i-lock",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-start",
+      "to": "fn-lock",
+      "title": "Lock the cart",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Inside db.transaction.",
+      "evidence": "server/src/orders/service.ts startPayment",
+      "transaction": "tx-start"
+    },
+    {
+      "id": "i-lock-sql",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-lock",
+      "to": "tbl-orders",
+      "title": "BEGIN; SELECT … FOR UPDATE",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Matches only the customer’s own order in state cart.",
+      "evidence": "server/src/db/orders-repo.ts lockCart",
+      "mechanism": "SELECT id, amount FROM shop.orders WHERE id = $1 AND user_id = $2 AND state = 'cart' FOR UPDATE",
+      "transaction": "tx-start",
+      "rules": "No row: another order, another customer, or already started. The service throws Conflict and the route answers 409."
+    },
+    {
+      "id": "i-await",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-start",
+      "to": "fn-await",
+      "title": "Move to awaiting_payment",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Same transaction.",
+      "evidence": "server/src/orders/service.ts startPayment",
+      "transaction": "tx-start"
+    },
+    {
+      "id": "i-await-sql",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-await",
+      "to": "tbl-orders",
+      "title": "UPDATE state",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Starts the 30-minute expiry clock.",
+      "evidence": "server/src/db/orders-repo.ts setAwaiting",
+      "mechanism": "UPDATE shop.orders SET state = 'awaiting_payment', payment_started_at = now()",
+      "transition": "t-start",
+      "checkpoint": "cp-awaiting",
+      "transaction": "tx-start"
+    },
+    {
+      "id": "i-commit-start",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-start",
+      "to": "tbl-orders",
+      "title": "COMMIT",
+      "delivery": "delivered",
+      "boundary": "transaction",
+      "summary": "Committed before any provider call.",
+      "evidence": "server/src/orders/service.ts startPayment",
+      "transaction": "tx-start"
+    },
+    {
+      "id": "i-intent",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-start",
+      "to": "fn-intent",
+      "title": "Create the payment intent",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Outside any transaction.",
+      "evidence": "server/src/orders/service.ts startPayment",
+      "example": "createPaymentIntent({ amount: 4200, orderId, idempotencyKey: orderId })"
+    },
+    {
+      "id": "i-intent-http",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-intent",
+      "to": "provider",
+      "title": "POST /v1/payment_intents",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The order id as idempotency key: a retried request gets the same intent.",
+      "evidence": "server/src/payments/provider.ts createPaymentIntent",
+      "mechanism": "POST https://api.payments.example/v1/payment_intents",
+      "example": "(synthetic) { \"amount\": 4200, \"metadata\": { \"orderId\": \"<order uuid>\" } }",
+      "fields": [
+        [
+          "idempotency-key",
+          "header",
+          "The order id."
+        ],
+        [
+          "authorization",
+          "header",
+          "Bearer <redacted>"
+        ]
+      ]
+    },
+    {
+      "id": "i-intent-reply",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "provider",
+      "to": "fn-intent",
+      "title": "200 intent",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The intent id and its client secret.",
+      "evidence": "server/src/payments/provider.ts createPaymentIntent",
+      "example": "(synthetic) { \"id\": \"pi_123\", \"client_secret\": \"<redacted>\" }"
+    },
+    {
+      "id": "i-save",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-start",
+      "to": "fn-save",
+      "title": "Save the payment id",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "A separate statement, after the provider replied.",
+      "evidence": "server/src/orders/service.ts startPayment"
+    },
+    {
+      "id": "i-save-sql",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-save",
+      "to": "tbl-orders",
+      "title": "UPDATE provider_payment_id",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Autocommit.",
+      "evidence": "server/src/db/orders-repo.ts savePaymentId",
+      "mechanism": "UPDATE shop.orders SET provider_payment_id = $1 WHERE id = $2"
+    },
+    {
+      "id": "i-reply",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Start",
+      "from": "fn-pay-route",
+      "to": "fn-pay-order",
+      "title": "200 client secret",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The page hands the secret to the provider’s script.",
+      "evidence": "server/src/routes/orders.ts payOrderRoute",
+      "example": "{ \"clientSecret\": \"<redacted>\" }"
+    },
+    {
+      "id": "i-expire-sql",
+      "scenarios": [
+        "late"
+      ],
+      "phase": "Expire",
+      "from": "fn-expire",
+      "to": "tbl-orders",
+      "title": "UPDATE … expired",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "The customer took over 30 minutes to confirm. The job does not ask the provider.",
+      "evidence": "server/src/jobs/expire.ts expireStaleOrders",
+      "mechanism": "UPDATE shop.orders SET state = 'expired' WHERE state = 'awaiting_payment' AND payment_started_at < now() - interval '30 minutes'",
+      "transition": "t-expire-charged",
+      "checkpoint": "cp-expired"
+    },
+    {
+      "id": "i-confirm",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-pay-order",
+      "to": "provider",
+      "title": "Confirm the card",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The provider’s script confirms the card in the browser. The shop server does not see this call.",
+      "evidence": "web/src/checkout.ts confirmPayment",
+      "example": "provider.confirmPayment(clientSecret)"
+    },
+    {
+      "id": "i-hook",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "provider",
+      "to": "fn-webhook",
+      "title": "POST payment_intent.succeeded",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "Signed event. The provider retries until it gets a 2xx.",
+      "evidence": "server/src/routes/webhooks.ts paymentWebhook",
+      "mechanism": "POST /webhooks/payments",
+      "example": "(synthetic) { \"id\": \"evt_1\", \"type\": \"payment_intent.succeeded\", \"data\": { \"orderId\": \"<order uuid>\", \"amount\": 4200 } }",
+      "fields": [
+        [
+          "Provider-Signature",
+          "header",
+          "HMAC-SHA256 of the raw body, hex."
+        ]
+      ]
+    },
+    {
+      "id": "i-verify",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-webhook",
+      "to": "fn-verify",
+      "title": "Verify the signature",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Throws on a bad signature, so Express answers 500 and the provider retries.",
+      "evidence": "server/src/routes/webhooks.ts paymentWebhook; server/src/payments/provider.ts verifyWebhook"
+    },
+    {
+      "id": "i-mark",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-webhook",
+      "to": "fn-mark",
+      "title": "Apply the event",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Only for payment_intent.succeeded.",
+      "evidence": "server/src/routes/webhooks.ts paymentWebhook"
+    },
+    {
+      "id": "i-event-sql",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-mark",
+      "to": "fn-event",
+      "title": "Record the event id",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Inside db.transaction.",
+      "evidence": "server/src/orders/service.ts markPaid",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-event-ins",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-event",
+      "to": "tbl-events",
+      "title": "BEGIN; INSERT … ON CONFLICT DO NOTHING",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "A redelivered event inserts nothing and markPaid returns.",
+      "evidence": "server/src/db/orders-repo.ts recordEvent",
+      "mechanism": "INSERT INTO shop.webhook_events (event_id) VALUES ($1) ON CONFLICT (event_id) DO NOTHING RETURNING event_id",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-paid",
+      "scenarios": [
+        "pay"
+      ],
+      "phase": "Confirm",
+      "from": "fn-mark",
+      "to": "fn-paid",
+      "title": "Mark paid",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Same transaction.",
+      "evidence": "server/src/orders/service.ts markPaid",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-paid-sql",
+      "scenarios": [
+        "pay"
+      ],
+      "phase": "Confirm",
+      "from": "fn-paid",
+      "to": "tbl-orders",
+      "title": "UPDATE … paid",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "Matches: still awaiting payment, same amount.",
+      "evidence": "server/src/db/orders-repo.ts markPaidIfAwaiting",
+      "mechanism": "UPDATE shop.orders SET state = 'paid', paid_at = now() WHERE id = $1 AND state = 'awaiting_payment' AND amount = $2",
+      "transition": "t-paid",
+      "checkpoint": "cp-paid",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-paid-late",
+      "scenarios": [
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-mark",
+      "to": "fn-paid",
+      "title": "Mark paid",
+      "delivery": "delivered",
+      "boundary": "call",
+      "summary": "Same call as on the ordinary path.",
+      "evidence": "server/src/orders/service.ts markPaid",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-paid-noop",
+      "scenarios": [
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-paid",
+      "to": "tbl-orders",
+      "title": "UPDATE matches 0 rows",
+      "delivery": "delivered",
+      "boundary": "database-call",
+      "summary": "The order is expired. Zero rows is not checked, so nothing fails.",
+      "evidence": "server/src/db/orders-repo.ts markPaidIfAwaiting",
+      "mechanism": "UPDATE shop.orders SET state = 'paid' … WHERE state = 'awaiting_payment' → UPDATE 0",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-commit-hook",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-mark",
+      "to": "tbl-orders",
+      "title": "COMMIT",
+      "delivery": "delivered",
+      "boundary": "transaction",
+      "summary": "The event id is now recorded, so a redelivery does nothing.",
+      "evidence": "server/src/orders/service.ts markPaid",
+      "transaction": "tx-hook"
+    },
+    {
+      "id": "i-hook-ok",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "phase": "Confirm",
+      "from": "fn-webhook",
+      "to": "provider",
+      "title": "200",
+      "delivery": "delivered",
+      "boundary": "http",
+      "summary": "The provider stops retrying.",
+      "evidence": "server/src/routes/webhooks.ts paymentWebhook"
+    }
+  ],
+  "checkpoints": {
+    "cp-awaiting": {
+      "owner": "tbl-orders",
+      "previous": "cart",
+      "next": "awaiting_payment",
+      "meaning": "payment_started_at set; the expiry clock runs.",
+      "evidence": "server/src/db/orders-repo.ts setAwaiting"
+    },
+    "cp-paid": {
+      "owner": "tbl-orders",
+      "previous": "awaiting_payment",
+      "next": "paid",
+      "meaning": "paid_at set.",
+      "evidence": "server/src/db/orders-repo.ts markPaidIfAwaiting"
+    },
+    "cp-expired": {
+      "owner": "tbl-orders",
+      "previous": "awaiting_payment",
+      "next": "expired",
+      "meaning": "Stock released. The provider may still capture.",
+      "evidence": "server/src/jobs/expire.ts expireStaleOrders"
+    }
+  },
+  "conditions": [
+    {
+      "id": "c-not-cart",
+      "label": "Order is not a cart",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "interactions": [
+        "i-lock-sql"
+      ],
+      "when": "Another customer’s order, or Pay pressed again after it started.",
+      "impact": "409; nothing changes.",
+      "detection": "lockCart returns no row; startPayment throws Conflict.",
+      "recovery": "The page shows that payment is under way.",
+      "tests": "server/test/payment.test.ts startPayment refuses",
+      "confidence": "code-confirmed"
+    },
+    {
+      "id": "c-redelivery",
+      "label": "Event delivered again",
+      "scenarios": [
+        "pay",
+        "late"
+      ],
+      "interactions": [
+        "i-event-ins"
+      ],
+      "when": "The provider retries a delivery it did not see acknowledged.",
+      "impact": "None: the event id is already recorded.",
+      "detection": "recordEvent returns false.",
+      "recovery": "None needed.",
+      "tests": "server/test/payment.test.ts markPaid ignores",
+      "confidence": "code-confirmed"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-start",
+      "name": "Start transaction",
+      "start": "i-lock-sql",
+      "end": "i-commit-start",
+      "span": "db",
+      "owner": "fn-start",
+      "evidence": "server/src/orders/service.ts startPayment",
+      "guarantee": "Only one request moves a cart to awaiting_payment. The provider call happens after the commit."
+    },
+    {
+      "id": "tx-hook",
+      "name": "Webhook transaction",
+      "start": "i-event-ins",
+      "end": "i-commit-hook",
+      "span": "db",
+      "owner": "fn-mark",
+      "evidence": "server/src/orders/service.ts markPaid",
+      "guarantee": "The event id and the paid state commit together."
+    }
+  ],
+  "lifecycle": {
+    "machine": {
+      "title": "Order",
+      "subject": "shop.orders",
+      "writers": {
+        "api": {
+          "name": "API",
+          "glyph": "A",
+          "role": "Signed-in customer",
+          "about": "Starts a payment on the customer’s own cart.",
+          "evidence": "server/src/db/orders-repo.ts lockCart"
+        },
+        "hook": {
+          "name": "Webhook",
+          "glyph": "P",
+          "role": "Signed provider event",
+          "about": "Marks an order paid on a verified succeeded event.",
+          "evidence": "server/src/payments/provider.ts verifyWebhook"
+        },
+        "job": {
+          "name": "Expiry job",
+          "glyph": "J",
+          "role": "Scheduler",
+          "about": "Expires orders awaiting payment for 30 minutes.",
+          "evidence": "server/src/jobs/expire.ts expireStaleOrders"
+        }
+      },
+      "coverage": {
+        "deployed": "Traced, and reachable in the running service.",
+        "substitute": "Traced, but only with a test substitute.",
+        "untraced": "Allowed by the source; not traced here."
+      },
+      "coverageLegend": {
+        "deployed": "traced · deployed",
+        "substitute": "traced · test only",
+        "untraced": "not traced"
+      },
+      "nodes": [
+        {
+          "id": "order",
+          "kind": "start",
+          "label": "Order created"
+        },
+        {
+          "id": "cart",
+          "kind": "state",
+          "label": "cart",
+          "fact": "no payment"
+        },
+        {
+          "id": "awaiting",
+          "kind": "state",
+          "label": "awaiting_payment",
+          "fact": "intent may exist",
+          "chips": [
+            "$",
+            "⏱"
+          ]
+        },
+        {
+          "id": "x-paid",
+          "kind": "ending",
+          "label": "paid",
+          "tone": "success",
+          "reason": "captured",
+          "consequence": "charged · order ships",
+          "checkpoint": "cp-paid"
+        },
+        {
+          "id": "x-expired",
+          "kind": "ending",
+          "label": "expired",
+          "tone": "neutral",
+          "reason": "unpaid",
+          "consequence": "not charged"
+        },
+        {
+          "id": "x-expired-charged",
+          "kind": "ending",
+          "label": "expired",
+          "tone": "failure",
+          "reason": "captured late",
+          "consequence": "charged · nothing ships",
+          "checkpoint": "cp-expired"
+        },
+        {
+          "id": "refunded",
+          "kind": "ghost",
+          "label": "refunded",
+          "fact": "allowed, never written"
+        }
+      ],
+      "chips": {
+        "$": "A payment intent the customer can still confirm at the provider.",
+        "⏱": "The 30-minute expiry is running."
+      },
+      "chipKinds": {
+        "$": "external",
+        "⏱": "internal"
+      },
+      "chipEvidence": "server/src/orders/service.ts startPayment; server/src/jobs/expire.ts expireStaleOrders",
+      "states": {
+        "cart": {
+          "meaning": "The customer has not started paying.",
+          "facts": "payment_started_at null",
+          "owes": "Nothing.",
+          "evidence": "db/schema.sql shop.orders"
+        },
+        "awaiting": {
+          "meaning": "Payment started; the server waits for the provider’s event.",
+          "facts": "payment_started_at set · provider_payment_id set once the provider replied",
+          "owes": "A payment intent the customer can still confirm, and the 30-minute expiry.",
+          "evidence": "server/src/db/orders-repo.ts setAwaiting; server/src/db/orders-repo.ts savePaymentId"
+        },
+        "refunded": {
+          "meaning": "The CHECK constraint allows it; no code writes it. See F1.",
+          "facts": "—",
+          "owes": "—",
+          "evidence": "db/schema.sql shop.orders"
+        }
+      },
+      "transitions": [
+        {
+          "id": "t-create",
+          "from": [
+            "order"
+          ],
+          "to": "cart",
+          "writer": "api",
+          "label": "create",
+          "guard": "The customer added items. Not part of this example’s code.",
+          "effect": "INSERT shop.orders; state defaults to cart.",
+          "evidence": "db/schema.sql shop.orders",
+          "reach": "untraced"
+        },
+        {
+          "id": "t-start",
+          "from": [
+            "cart"
+          ],
+          "to": "awaiting",
+          "writer": "api",
+          "label": "pay",
+          "guard": "The customer’s own order, in state cart, under the row lock.",
+          "effect": "awaiting_payment; then an intent at the provider.",
+          "evidence": "server/src/orders/service.ts startPayment",
+          "reach": "deployed",
+          "tests": "server/test/payment.test.ts startPayment refuses"
+        },
+        {
+          "id": "t-paid",
+          "from": [
+            "awaiting"
+          ],
+          "to": "x-paid",
+          "writer": "hook",
+          "label": "paid",
+          "guard": "Verified event, first delivery, still awaiting payment, same amount.",
+          "effect": "paid · paid_at.",
+          "evidence": "server/src/orders/service.ts markPaid; server/src/db/orders-repo.ts markPaidIfAwaiting",
+          "reach": "deployed",
+          "tests": "server/test/payment.test.ts markPaid ignores"
+        },
+        {
+          "id": "t-expire",
+          "from": [
+            "awaiting"
+          ],
+          "to": "x-expired",
+          "writer": "job",
+          "label": "expire",
+          "guard": "Awaiting payment for 30 minutes; the customer never confirms.",
+          "effect": "expired.",
+          "evidence": "server/src/jobs/expire.ts expireStaleOrders",
+          "reach": "deployed"
+        },
+        {
+          "id": "t-expire-charged",
+          "from": [
+            "awaiting"
+          ],
+          "to": "x-expired-charged",
+          "writer": "job",
+          "label": "expire",
+          "short": "expire · then captured",
+          "guard": "Same statement; the customer confirms after it ran.",
+          "effect": "expired; the later event matches no row.",
+          "evidence": "server/src/jobs/expire.ts expireStaleOrders; server/src/db/orders-repo.ts markPaidIfAwaiting",
+          "reach": "deployed"
+        }
+      ]
+    },
+    "endings": {
+      "x-paid": {
+        "title": "paid",
+        "record": "paid · paid_at set; event id recorded.",
+        "cost": "The order amount.",
+        "result": "The order ships.",
+        "external": "Payment captured.",
+        "seen": "Order confirmed.",
+        "owed": "Nothing.",
+        "evidence": "server/src/db/orders-repo.ts markPaidIfAwaiting"
+      },
+      "x-expired": {
+        "title": "expired · unpaid",
+        "record": "expired.",
+        "cost": "Nothing.",
+        "result": "Stock released.",
+        "external": "An unconfirmed intent, which the provider cancels on its own schedule.",
+        "seen": "The order expired.",
+        "owed": "Nothing.",
+        "evidence": "server/src/jobs/expire.ts expireStaleOrders"
+      },
+      "x-expired-charged": {
+        "title": "expired · captured late",
+        "record": "expired; the event id is recorded, so a redelivery does nothing either.",
+        "cost": "The order amount, kept.",
+        "result": "Nothing ships.",
+        "external": "Payment captured; the webhook got 200.",
+        "seen": "Charged, and the order expired.",
+        "owed": "A refund nobody issues. See F1.",
+        "evidence": "server/src/db/orders-repo.ts markPaidIfAwaiting; server/src/routes/webhooks.ts paymentWebhook"
+      }
+    },
+    "paths": [
+      {
+        "id": "p-pay",
+        "label": "Pay",
+        "end": "x-paid",
+        "scenario": "pay",
+        "transitions": [
+          "t-create",
+          "t-start",
+          "t-paid"
+        ]
+      },
+      {
+        "id": "p-late",
+        "label": "Confirm after expiry",
+        "end": "x-expired-charged",
+        "scenario": "late",
+        "transitions": [
+          "t-create",
+          "t-start",
+          "t-expire-charged"
+        ]
+      },
+      {
+        "id": "p-abandon",
+        "label": "Abandon the payment",
+        "end": "x-expired",
+        "scenario": null,
+        "transitions": [
+          "t-create",
+          "t-start",
+          "t-expire"
+        ]
+      }
+    ],
+    "collisions": {
+      "rows": [
+        {
+          "id": "r-cart",
+          "label": "cart",
+          "fact": "no payment",
+          "state": "cart"
+        },
+        {
+          "id": "r-awaiting",
+          "label": "awaiting_payment",
+          "fact": "intent may exist",
+          "state": "awaiting"
+        }
+      ],
+      "cols": [
+        {
+          "id": "c-again",
+          "label": "Pay pressed again"
+        },
+        {
+          "id": "c-redeliver",
+          "label": "Event delivered twice"
+        },
+        {
+          "id": "c-expire",
+          "label": "Expiry job runs"
+        },
+        {
+          "id": "c-crash",
+          "label": "API crashes mid-request"
+        }
+      ],
+      "cells": [
+        {
+          "row": "r-cart",
+          "col": "c-again",
+          "short": "One wins",
+          "end": "awaiting",
+          "transitions": [
+            "t-start"
+          ],
+          "detail": "The second request waits on the row lock, then finds no cart and gets 409.",
+          "evidence": "server/src/db/orders-repo.ts lockCart",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-cart",
+          "col": "c-redeliver",
+          "short": "Cannot occur",
+          "end": null,
+          "transitions": [],
+          "detail": "No intent exists yet, so there is no event.",
+          "evidence": "server/src/orders/service.ts startPayment",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-cart",
+          "col": "c-expire",
+          "short": "Not matched",
+          "end": null,
+          "transitions": [],
+          "detail": "The job matches only awaiting_payment.",
+          "evidence": "server/src/jobs/expire.ts expireStaleOrders",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-cart",
+          "col": "c-crash",
+          "short": "Nothing to lose",
+          "end": null,
+          "transitions": [],
+          "detail": "The transaction rolls back; the order stays a cart.",
+          "evidence": "server/src/orders/service.ts startPayment",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-awaiting",
+          "col": "c-again",
+          "short": "409",
+          "end": "awaiting",
+          "transitions": [],
+          "detail": "lockCart finds no cart. A page that lost its client secret cannot get it back. Unknown whether the page handles this.",
+          "evidence": "server/src/db/orders-repo.ts lockCart; web/src/checkout.ts payOrder",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-awaiting",
+          "col": "c-redeliver",
+          "short": "Ignored",
+          "end": "x-paid",
+          "transitions": [
+            "t-paid"
+          ],
+          "detail": "The first delivery marked it paid; the second inserts no event row and returns.",
+          "evidence": "server/src/db/orders-repo.ts recordEvent",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-awaiting",
+          "col": "c-expire",
+          "short": "Expires · keeps a late payment",
+          "end": "x-expired-charged",
+          "transitions": [
+            "t-expire-charged"
+          ],
+          "detail": "If the customer confirms afterwards, the event matches no row and is acknowledged. F1.",
+          "evidence": "server/src/jobs/expire.ts expireStaleOrders; server/src/db/orders-repo.ts markPaidIfAwaiting",
+          "confidence": "code-confirmed"
+        },
+        {
+          "row": "r-awaiting",
+          "col": "c-crash",
+          "short": "Expires unpaid",
+          "end": "x-expired",
+          "transitions": [
+            "t-expire"
+          ],
+          "detail": "A crash after the commit and before the intent leaves no provider_payment_id; the customer has no secret and the job expires it.",
+          "evidence": "server/src/orders/service.ts startPayment; server/src/jobs/expire.ts expireStaleOrders",
+          "confidence": "inferred"
+        }
+      ]
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "label": "A payment captured after expiry is kept, and nothing ships",
+        "rank": "P1",
+        "kind": "Confirmed defect",
+        "detail": "expireStaleOrders never asks the provider, and markPaidIfAwaiting ignores a zero-row update. The event is recorded and acknowledged, so no retry repairs it.",
+        "evidence": "server/src/jobs/expire.ts expireStaleOrders; server/src/db/orders-repo.ts markPaidIfAwaiting; server/src/routes/webhooks.ts paymentWebhook",
+        "invariant": "A captured payment ends paid or refunded.",
+        "impact": "The customer is charged and the order expires. Support learns of it only from the customer.",
+        "reproduction": "Start a payment, wait 30 minutes for the job, then confirm the card. The order stays expired and webhook_events holds the event.",
+        "owner": "markPaid, which applies the provider’s evidence of capture.",
+        "repair": "Proposal: when markPaidIfAwaiting matches no row for a succeeded event, refund through the provider with the event id as idempotency key and write refunded; or cancel the intent at the provider before expiring the order.",
+        "closure": "A test that expires the order, delivers payment_intent.succeeded, and asserts a refund request and state refunded.",
+        "nodes": [
+          "awaiting",
+          "x-expired-charged",
+          "refunded"
+        ],
+        "transitions": [
+          "t-expire-charged"
+        ],
+        "participants": [
+          "fn-expire",
+          "fn-paid",
+          "fn-mark",
+          "tbl-orders"
+        ],
+        "interactions": [
+          "i-expire-sql",
+          "i-paid-noop"
+        ],
+        "collisions": [
+          {
+            "row": "r-awaiting",
+            "col": "c-expire"
+          }
+        ],
+        "path": "p-late",
+        "steps": [
+          {
+            "mark": "holds",
+            "interaction": "i-await-sql",
+            "text": "Payment starts; the 30-minute clock runs."
+          },
+          {
+            "mark": "breaks",
+            "interaction": "i-expire-sql",
+            "text": "The job expires the order without cancelling the intent."
+          },
+          {
+            "mark": "holds",
+            "interaction": "i-hook",
+            "text": "The customer confirms; the provider captures and sends the event."
+          },
+          {
+            "mark": "breaks",
+            "interaction": "i-paid-noop",
+            "text": "The update matches no row and nobody checks."
+          },
+          {
+            "mark": "missing",
+            "interaction": "i-hook-ok",
+            "text": "No refund is issued before the 200 ends the provider’s retries."
+          }
+        ]
+      }
+    ]
+  }
+}

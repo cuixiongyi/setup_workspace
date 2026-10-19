@@ -632,6 +632,30 @@ test_tmux_config() {
   tmux -L "$socket" kill-server
 }
 
+test_agent_skills() {
+  local home="$test_root/skills-home"
+  local skill="$ROOT_DIR/agent-skills/code-path-explorer"
+  local example
+
+  mkdir -p -- "$home"
+  for _ in 1 2; do
+    HOME="$home" WORKSPACE_INSTALL_SKILL_DEPS=0 "$ROOT_DIR/install/agent-skills.sh" >/dev/null
+  done
+  [[ "$(readlink -- "$home/.claude/skills/code-path-explorer")" == "$skill" ]] ||
+    fail "Claude Code skill link is missing"
+  [[ "$(readlink -- "$home/.agents/skills/code-path-explorer")" == "$skill" ]] ||
+    fail "Codex skill link is missing"
+  [[ -z "$(find "$home" -name '*.pre-setup-workspace*' -print -quit)" ]] ||
+    fail "rerunning the skill install created a backup"
+
+  command -v node >/dev/null 2>&1 || return 0
+  for example in python/cancel-export typescript/pay-order; do
+    node "$skill/scripts/build.mjs" "$skill/examples/$example.json" "$test_root/example.html" \
+      --root "$skill/examples/${example%%/*}" >/dev/null ||
+      fail "code-path-explorer example $example does not build"
+  done
+}
+
 test_profile_defaults
 test_network_filesystem_detection
 test_managed_files_and_backups
@@ -643,5 +667,6 @@ test_ssh_agent_socket_refresh
 test_shell_idempotency
 test_bash_login_sources_workspace
 test_tmux_config
+test_agent_skills
 
 echo "setup_workspace functional tests passed"

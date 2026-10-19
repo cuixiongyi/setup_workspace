@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Path Explorer"
+  short_description: "Interactive lifecycle and sequence explorer for one code path"
+  default_prompt: "Use $code-path-explorer to build an explorer for this journey: "

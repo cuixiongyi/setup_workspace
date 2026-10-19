@@ -1,0 +1,1158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "journey-explorer/2",
+  "title": "Journey explorer model",
+  "description": "One journey: a participant tree whose lanes can be shown at any declared level, the sequence of interactions per scenario, and the lifecycle of the durable state the journey changes. See the format reference that ships with this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "title",
+    "export",
+    "levels",
+    "defaultLevel",
+    "participants",
+    "scenarios",
+    "interactions",
+    "lifecycle"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "format": {
+      "enum": [
+        "journey-explorer/2"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lead": {
+      "type": "string",
+      "description": "Opening paragraph. `code` spans are rendered as code."
+    },
+    "note": {
+      "type": "string",
+      "description": "Evidence and revision statement shown under the lead."
+    },
+    "revision": {
+      "type": "string"
+    },
+    "export": {
+      "type": "string",
+      "description": "File name of this model, beside the generated HTML."
+    },
+    "related": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/link"
+      }
+    },
+    "outside": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What this journey deliberately excludes."
+    },
+    "codePaths": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Short names used in evidence strings, mapped to repository paths."
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/level"
+      },
+      "description": "Lane granularities, coarsest first. Every participant names one; a child's level is finer than its parent's."
+    },
+    "defaultLevel": {
+      "type": "string"
+    },
+    "participants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/participant"
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/boundary"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "interactions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/interaction"
+      }
+    },
+    "checkpoints": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/checkpoint"
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/condition"
+      }
+    },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transaction"
+      }
+    },
+    "lifecycle": {
+      "$ref": "#/$defs/lifecycle"
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "string",
+      "minLength": 1,
+      "description": "\"path symbol; path symbol\". The build checks each path exists and each symbol's first word appears in it."
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "href"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "href": {
+          "type": "string"
+        }
+      }
+    },
+    "level": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "about": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "what",
+        "evidence"
+      ],
+      "properties": {
+        "what": {
+          "type": "string"
+        },
+        "where": {
+          "type": "string"
+        },
+        "does": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "participant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "level",
+        "about"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string"
+        },
+        "parent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "description": "Free label shown in the inspector: process, file, function, table, routine, store, external…"
+        },
+        "detail": {
+          "type": "string",
+          "description": "Qualified name: a file path, schema.table, module.function."
+        },
+        "about": {
+          "$ref": "#/$defs/about"
+        }
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "badge": {
+          "type": "string",
+          "description": "Short prefix on the arrow label."
+        },
+        "label": {
+          "type": "string"
+        },
+        "internal": {
+          "type": "boolean",
+          "description": "Work inside the receiver, not an extra round trip from the sender."
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "summary"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "scenarios",
+        "phase",
+        "from",
+        "to",
+        "title",
+        "delivery",
+        "boundary",
+        "summary",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "scenarios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "phase": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string",
+          "description": "Participant id, at the finest level traced."
+        },
+        "to": {
+          "type": "string"
+        },
+        "invocation": {
+          "type": "string",
+          "description": "Invocation id when one function lane is entered more than once (repeated or reentrant calls); rows of the same invocation share it."
+        },
+        "title": {
+          "type": "string"
+        },
+        "delivery": {
+          "enum": [
+            "delivered",
+            "refused",
+            "not-sent"
+          ]
+        },
+        "boundary": {
+          "type": "string",
+          "description": "Key of `boundaries`."
+        },
+        "mechanism": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "example": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "rules": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "checkpoint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Key of `checkpoints` this interaction produces."
+        },
+        "transition": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Lifecycle transition this interaction carries."
+        },
+        "transaction": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "relatedParticipants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "previous",
+        "next",
+        "meaning",
+        "evidence"
+      ],
+      "properties": {
+        "owner": {
+          "type": "string",
+          "description": "Participant id whose lane shows the pill."
+        },
+        "previous": {
+          "type": "string"
+        },
+        "next": {
+          "type": "string"
+        },
+        "meaning": {
+          "type": "string"
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "side": {
+          "type": "string"
+        },
+        "elsewhere": {
+          "type": "string"
+        },
+        "risk": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "scenarios",
+        "interactions",
+        "when",
+        "impact",
+        "detection",
+        "recovery",
+        "tests",
+        "confidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string"
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "interactions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "when": {
+          "type": "string"
+        },
+        "impact": {
+          "type": "string"
+        },
+        "detection": {
+          "type": "string"
+        },
+        "recovery": {
+          "type": "string"
+        },
+        "tests": {
+          "$ref": "#/$defs/evidence"
+        },
+        "confidence": {
+          "type": "string"
+        }
+      }
+    },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "start",
+        "end",
+        "span",
+        "evidence",
+        "guarantee"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start": {
+          "type": "string",
+          "description": "First interaction inside the transaction."
+        },
+        "end": {
+          "type": "string"
+        },
+        "span": {
+          "type": "string",
+          "description": "Participant whose lanes the band covers, for example the database."
+        },
+        "owner": {
+          "type": "string",
+          "description": "Participant that opens and commits it."
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "guarantee": {
+          "type": "string"
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "machine",
+        "endings",
+        "paths",
+        "collisions"
+      ],
+      "properties": {
+        "machine": {
+          "$ref": "#/$defs/machine"
+        },
+        "endings": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/ending"
+          }
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        },
+        "collisions": {
+          "$ref": "#/$defs/collisions"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        },
+        "cardOrder": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ending cards in display order; a non-ending node shows its paths that stop there."
+        }
+      }
+    },
+    "machine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "subject",
+        "writers",
+        "coverage",
+        "coverageLegend",
+        "nodes",
+        "states",
+        "transitions"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Name of the concept, e.g. Job, Order, Session."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Where its state lives, e.g. a table."
+        },
+        "writers": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 4,
+          "additionalProperties": {
+            "$ref": "#/$defs/writer"
+          }
+        },
+        "coverage": {
+          "$ref": "#/$defs/coverageText"
+        },
+        "coverageLegend": {
+          "$ref": "#/$defs/coverageText"
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "chips": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Outstanding-obligation markers: short label → meaning."
+        },
+        "chipKinds": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "external",
+              "internal"
+            ]
+          }
+        },
+        "chipEvidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/state"
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/transition"
+          }
+        },
+        "rowCaptions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "above": {
+              "type": "string"
+            },
+            "below": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "coverageText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deployed",
+        "substitute",
+        "untraced"
+      ],
+      "properties": {
+        "deployed": {
+          "type": "string"
+        },
+        "substitute": {
+          "type": "string"
+        },
+        "untraced": {
+          "type": "string"
+        }
+      }
+    },
+    "writer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "glyph",
+        "about",
+        "evidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "glyph": {
+          "type": "string",
+          "maxLength": 2
+        },
+        "role": {
+          "type": "string"
+        },
+        "about": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "start",
+            "state",
+            "ending",
+            "ghost"
+          ],
+          "description": "ghost: allowed by the schema, never reached."
+        },
+        "label": {
+          "type": "string"
+        },
+        "fact": {
+          "type": "string",
+          "description": "State: one short line of what is true on the row."
+        },
+        "chips": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "checkpoint": {
+          "type": "string"
+        },
+        "tone": {
+          "enum": [
+            "success",
+            "failure",
+            "cancelled",
+            "neutral"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Ending: the reason code."
+        },
+        "consequence": {
+          "type": "string",
+          "description": "Ending: one short line of what it costs the person."
+        },
+        "row": {
+          "enum": [
+            "main",
+            "above",
+            "below"
+          ],
+          "description": "Layout override."
+        },
+        "order": {
+          "type": "number",
+          "description": "Layout override for main-row order."
+        },
+        "cx": {
+          "type": "number",
+          "description": "Layout override for the centre x."
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "meaning",
+        "facts",
+        "owes",
+        "evidence"
+      ],
+      "properties": {
+        "meaning": {
+          "type": "string"
+        },
+        "facts": {
+          "type": "string"
+        },
+        "owes": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "from",
+        "to",
+        "writer",
+        "label",
+        "guard",
+        "effect",
+        "evidence",
+        "reach"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "from": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "to": {
+          "type": "string"
+        },
+        "writer": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "short": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Label drawn on a main-row arrow."
+        },
+        "guard": {
+          "type": "string"
+        },
+        "effect": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "reach": {
+          "enum": [
+            "deployed",
+            "substitute",
+            "untraced"
+          ]
+        },
+        "tests": {
+          "type": "string"
+        }
+      }
+    },
+    "ending": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "record",
+        "cost",
+        "result",
+        "external",
+        "seen",
+        "owed",
+        "evidence"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "record": {
+          "type": "string",
+          "description": "The durable row in this ending."
+        },
+        "cost": {
+          "type": "string",
+          "description": "What the person pays, keeps or loses."
+        },
+        "result": {
+          "type": "string"
+        },
+        "external": {
+          "type": "string",
+          "description": "The external party's state."
+        },
+        "seen": {
+          "type": "string",
+          "description": "What the person sees."
+        },
+        "owed": {
+          "type": "string",
+          "description": "What is still owed after the end, and who discharges it."
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "path": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "end",
+        "scenario",
+        "transitions"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string"
+        },
+        "end": {
+          "type": "string"
+        },
+        "scenario": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Traced scenario, or null when only the transitions are known."
+        },
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "collisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rows",
+        "cols",
+        "cells"
+      ],
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "fact",
+              "state"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "fact": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "cols": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "row",
+              "col",
+              "short",
+              "end",
+              "transitions",
+              "detail",
+              "evidence",
+              "confidence"
+            ],
+            "properties": {
+              "row": {
+                "type": "string"
+              },
+              "col": {
+                "type": "string"
+              },
+              "short": {
+                "type": "string"
+              },
+              "end": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "transitions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "detail": {
+                "type": "string"
+              },
+              "evidence": {
+                "$ref": "#/$defs/evidence"
+              },
+              "confidence": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "detail",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "label": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "issue": {
+          "$ref": "#/$defs/link"
+        },
+        "nodes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Lifecycle state or ending ids this gap sits on."
+        },
+        "transitions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Lifecycle transition ids this gap sits on."
+        },
+        "interactions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sequence interaction ids this gap sits on."
+        },
+        "rank": {
+          "enum": ["P1", "P2", "P3"],
+          "description": "P1 launch-blocking, P2 serious, P3 limited or latent."
+        },
+        "kind": {
+          "type": "string",
+          "description": "Confirmed defect, confirmed gap, risk, missing proof or owner decision."
+        },
+        "invariant": {
+          "type": "string",
+          "description": "What must stay true, in the review's words."
+        },
+        "impact": {
+          "type": "string",
+          "description": "What the person sees, pays, keeps or loses when it happens."
+        },
+        "reproduction": {
+          "type": "string",
+          "description": "The schedule or input that makes it happen."
+        },
+        "owner": {
+          "type": "string",
+          "description": "The boundary that owns the invariant and its repair."
+        },
+        "repair": {
+          "type": "string",
+          "description": "The smallest repair direction. A proposal, not implemented behaviour."
+        },
+        "closure": {
+          "type": "string",
+          "description": "The acceptance evidence that would close it."
+        },
+        "path": {
+          "type": "string",
+          "description": "The lifecycle path that shows the problem. Selecting the problem switches to it."
+        },
+        "participants": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Participants where the problem lives. Their lanes are marked at every level."
+        },
+        "collisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["row", "col"],
+            "properties": {
+              "row": { "type": "string" },
+              "col": { "type": "string" }
+            }
+          },
+          "description": "Collision cells that describe the problem."
+        },
+        "steps": {
+          "type": "array",
+          "description": "How it goes wrong, in order. Each step may point at a sequence row or a transition.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text", "mark"],
+            "properties": {
+              "text": { "type": "string" },
+              "mark": {
+                "enum": ["holds", "breaks", "missing"],
+                "description": "holds: works as intended; breaks: where the invariant fails; missing: a step the invariant needs that the code does not take."
+              },
+              "interaction": { "type": "string" },
+              "transition": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
